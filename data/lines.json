@@ -60,6 +60,12 @@
 		"recovery": "Recovery is lagging. Foam rolling and lighter weeks help; a tired client gains less from every session.",
 		"knowledge": "Pacing Knowledge is lagging. Hitting the right effort in pace coaching teaches it."
 	},
+	"blocks": {
+		"base": "Build the base: mostly easy and long running, plus strength. Nothing heroic yet; at an amber signal, hold back.",
+		"build": "Add quality: tempo runs and intervals raise Pace. Amber is where the gains are; push through it.",
+		"peak": "The hardest weeks: the longest runs and race-pace work. Push at amber, but red still means hold back.",
+		"taper": "Race week. Cut the load so they arrive fresh; fatigue on race morning costs readiness. Hold back at amber."
+	},
 	"advice": {
 		"no_hard": "{exercise} on Hard stops being what it is for. Use Easy or Moderate.",
 		"beginner_no_hard": "{name} is new to training. {exercise} on Hard risks injury.",

@@ -293,7 +293,7 @@ func _load_lines(data: Dictionary) -> void:
 	var rules := DataRules.new(errors, "lines.json")
 	for key in ["questions", "check_in_states", "approaches"]:
 		rules.list(data, key, false)
-	for key in ["approach_right", "approach_wrong", "signals", "peak_feedback", "moments", "guidance", "advice"]:
+	for key in ["approach_right", "approach_wrong", "signals", "peak_feedback", "moments", "guidance", "advice", "blocks"]:
 		rules.object(data, key)
 	if not errors.is_empty():
 		return
@@ -306,6 +306,9 @@ func _load_lines(data: Dictionary) -> void:
 	for attribute in ATTRIBUTES:
 		if not data.moments.has(attribute) or not data.guidance.has(attribute):
 			rules.fail("moments and guidance need an entry for " + attribute)
+	for block in BLOCKS:
+		if not data.blocks.has(block):
+			rules.fail("blocks needs " + block)
 	for colour in ["green", "amber", "red"]:
 		if not data.signals.has(colour):
 			rules.fail("signals needs " + colour)
