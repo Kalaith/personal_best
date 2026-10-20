@@ -6,6 +6,9 @@ extends RefCounted
 const Balance = preload("res://addons/hatchery/core/balance.gd")
 const Catalog = preload("res://scripts/core/catalog.gd")
 
+## A minor injury carried into race day costs this share of readiness.
+const NIGGLE_PENALTY: float = 0.15
+
 
 ## 0..1: how much of the goal's requirement `attribute` meets.
 static func ratio(state: RefCounted, attribute: String) -> float:
@@ -52,10 +55,15 @@ static func weakest(state: RefCounted) -> Array:
 	return ranked
 
 
-## Readiness on the start line: fatigue carried into race day takes some off.
+## Readiness on the start line: fatigue carried into race day takes some
+## off, and so does running with an unhealed injury. Race day and the
+## planner's projection both use this.
 static func race_readiness(state: RefCounted) -> float:
 	var penalty: float = Balance.number("readiness.race_fatigue_penalty") * clampf(state.fatigue / 100.0, 0.0, 1.0)
-	return readiness(state) * (1.0 - penalty)
+	var result: float = readiness(state) * (1.0 - penalty)
+	if state.injured_weeks > 0:
+		result *= 1.0 - NIGGLE_PENALTY
+	return result
 
 
 ## Predicted finishing time in minutes before race-day variation.
@@ -82,7 +90,7 @@ static func projection(state: RefCounted) -> Dictionary:
 		verdict = "on_track"
 	elif low <= goal:
 		verdict = "in_reach"
-	return {"low": low, "high": high, "goal": goal, "verdict": verdict}
+	return {"low": low, "high": high, "goal": goal, "verdict": verdict, "niggle": state.injured_weeks > 0}
 
 
 ## How far race day can swing the time either way (a fraction): Pacing

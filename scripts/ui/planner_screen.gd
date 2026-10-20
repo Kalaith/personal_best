@@ -107,6 +107,8 @@ func _projection(state: RefCounted) -> Label:
 	var verdict: Array = verdicts[projection.verdict]
 	var range_text: String = "%s to %s" % [Readiness.format_minutes(projection.low), Readiness.format_minutes(projection.high)]
 	var tired: String = " Fatigue %d is costing time; a taper wins it back." % int(round(state.fatigue)) if state.fatigue >= 30.0 else ""
+	if projection.niggle:
+		tired += " Still injured: that costs %d%% readiness until it heals." % int(round(Readiness.NIGGLE_PENALTY * 100.0))
 	var line: Label = Style.ui.wrapped("Race today: %s, %s.%s" % [range_text, verdict[0], tired], 14, verdict[1])
 	line.tooltip_text = "Today's readiness and fatigue turned into a finishing time, with race-day luck either way. Better Pacing Knowledge narrows the range; a taper removes the fatigue penalty."
 	line.mouse_filter = Control.MOUSE_FILTER_PASS

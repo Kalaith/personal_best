@@ -6,8 +6,6 @@ extends RefCounted
 const Balance = preload("res://addons/hatchery/core/balance.gd")
 const Readiness = preload("res://scripts/core/readiness.gd")
 
-## A minor injury carried into race day costs this share of readiness.
-const NIGGLE_PENALTY: float = 0.15
 
 
 static func run(game: RefCounted, state: RefCounted) -> Dictionary:
@@ -16,8 +14,6 @@ static func run(game: RefCounted, state: RefCounted) -> Dictionary:
 	var niggle: bool = state.injured_weeks > 0
 	var readiness: float = Readiness.readiness(state)
 	var race_ready: float = Readiness.race_readiness(state)
-	if niggle:
-		race_ready *= 1.0 - NIGGLE_PENALTY
 	var goal: float = float(state.def.target.minutes)
 	var cutoff: float = Balance.number("event.cutoff_minutes")
 	var spread: float = Readiness.variation(state)

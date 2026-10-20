@@ -30,6 +30,9 @@ static func draw(rng: RandomNumberGenerator, signal_colour: String, mood: float,
 			weights.confident = float(weights.confident) + hint
 		if mood >= 65.0:
 			weights.confident = float(weights.confident) + hint
+	else:
+		# A tiring client is never "flying": the cue would contradict the signal.
+		weights.confident = 0.0
 	return String(Det.weighted_key(rng, weights, "steady"))
 
 

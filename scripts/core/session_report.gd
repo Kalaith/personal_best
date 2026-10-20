@@ -57,7 +57,9 @@ static func apply(sim: RefCounted) -> Dictionary:
 			applied["knowledge"] = float(applied.get("knowledge", 0.0)) + knowledge
 		for key in applied:
 			client.attributes[key] = clampf(float(client.attributes[key]) + float(applied[key]), 0.0, 100.0)
-		added_fatigue += RoutineRules.fatigue(rec.entry, client, rec.def)
+		# A client stopped early only tires from the repeats they actually did.
+		var completed: float = float(rec.stopped_after) / float(rec.presses) if int(rec.stopped_after) > 0 else 1.0
+		added_fatigue += RoutineRules.fatigue(rec.entry, client, rec.def) * completed
 		var notes: Array = []
 		for note in assessed.notes + conditions.notes:
 			if note.tone == "bad" or note.tone == "warn":

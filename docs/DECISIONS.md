@@ -83,14 +83,16 @@ the numbers are tuned only against the scripted coaches in `tools/season_sim.gd`
 - **Stop ends the exercise.** The client walks it off (+15 energy) and the
   session moves on with no closing peak. Stopping on red keeps full credit:
   the skipped repeats are not scored. Stopping a client who had more in
-  them scores the skipped repeats as 0. The wrap-up says where they stopped.
+  them scores the skipped repeats as 0. Fatigue from the exercise is charged
+  only for the share of repeats done. The wrap-up says where they stopped.
   `session_sim.gd → _stop_exercise`, `balance.json → effort`.
 - **Encouragement reads the moment, not just the personality.** Each press
   draws a situation: steady (use their usual approach), exhausted (calm),
   frustrated (informative) or flying (competitive; upbeat for Anxious
   clients). Red/amber energy makes exhausted likely, a poor last press or low
   mood frustrated, a perfect last press or high mood flying. The cue line
-  describes the situation. Right approach scores as normal, their usual
+  describes the situation. Flying is only possible on a green signal, so the
+  cue never contradicts the face and meter. Right approach scores as normal, their usual
   approach when the moment wanted another 0.5, anything else 0.2. Approach
   zones are shuffled each press. `encouragement.gd`,
   `lines.json → encouragement_situations`, `balance.json → encouragement`.
@@ -164,16 +166,18 @@ the numbers are tuned only against the scripted coaches in `tools/season_sim.gd`
   buyable.
 - **Race projection from week 8.** The planner shows the finishing range if
   the race were run today (today's readiness and fatigue, ± race-day luck)
-  and whether the goal is on track, in reach or not yet.
+  and whether the goal is on track, in reach or not yet. It uses the same
+  start-line readiness as race day (`Readiness.race_readiness`), including
+  the 15 % penalty for running injured.
   `Readiness.projection`, `balance.json → event.projection_from_week`.
 
 ## Balance as tuned (season_sim, 8 seeds each)
 
 | Coach | Jordan race readiness | Jordan goals | Peg race readiness | Peg goals |
 |---|---|---|---|---|
-| Good (follows suggestions, reads signals) | ~89 % | 4/8 | ~96 % | 8/8 |
+| Good (follows suggestions, reads signals) | ~89 % | 5/8 | ~96 % | 8/8 |
 | Average | ~76 % | 0/8 | ~88 % | 6/8 |
-| Careless (pushes every peak) | ~58 % | 0/8 | ~71 % | 1/8 |
+| Careless (pushes every peak) | ~59 % | 0/8 | ~71 % | 0/8 |
 
 Jordan's sub-3:30 is meant to be the hard target. Peg's requirements were
 lowered (Endurance 55, Strength, Recovery and Pacing Knowledge 40) so an
