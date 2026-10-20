@@ -42,9 +42,16 @@ func _ready() -> void:
 		column.add_child(Style.ui.label("Delivered: %s is set up in the shed." % item, 14, Style.GREEN))
 	if not notice.is_empty():
 		column.add_child(Style.ui.wrapped(notice, 14, Style.AMBER))
+	# Late in the season the cards outgrow the screen; they scroll and the
+	# footer stays put.
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(scroll)
 	var cards: HBoxContainer = Style.ui.hbox(14)
+	cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cards.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(cards)
+	scroll.add_child(cards)
 	for state in game.clients:
 		cards.add_child(_client_card(state))
 	column.add_child(_footer())
@@ -128,7 +135,7 @@ func _booking(state: RefCounted) -> VBoxContainer:
 		var open: bool = WeekRules.booking_problem(game, state, day).is_empty()
 		var chosen: bool = state.booked_day == day
 		var button: Button = Style.ui.button(day, func() -> void: book.emit(state, "" if chosen else day), chosen, 15)
-		button.custom_minimum_size = Vector2(62, 40)
+		button.custom_minimum_size = Vector2(72, 48)
 		button.disabled = not open
 		if chosen:
 			button.text = "+ " + day

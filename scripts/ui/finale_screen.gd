@@ -30,12 +30,21 @@ func _ready() -> void:
 	view.client_x = 0.66
 	view.set_activity("shed", "wave", 0.6)
 	column.add_child(view)
+	# The journeys scroll when they outgrow the screen; the buttons stay put.
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(scroll)
+	var body: VBoxContainer = Style.ui.vbox(12)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.add_child(body)
 	var cards: HBoxContainer = Style.ui.hbox(14)
 	cards.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(cards)
+	body.add_child(cards)
 	for result in results:
 		cards.add_child(_journey(result))
-	column.add_child(Style.ui.wrapped("Same race, same twelve weeks, different people. This prototype ends here; in the full game they may come back with a new goal, and new clients will walk through the door.", 15))
+	body.add_child(Style.ui.wrapped("Same race, same twelve weeks, different people. This prototype ends here; in the full game they may come back with a new goal, and new clients will walk through the door.", 15))
 	var buttons: HBoxContainer = Style.ui.hbox(12)
 	buttons.alignment = BoxContainer.ALIGNMENT_END
 	column.add_child(buttons)

@@ -24,7 +24,7 @@ var _font: Font
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(0, 120)
+	custom_minimum_size = Vector2(0, 136)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_font = get_theme_default_font()
 
@@ -81,13 +81,13 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var bar := Rect2(Vector2(10, 40), Vector2(size.x - 20, 44))
+	var bar := Rect2(Vector2(14, 50), Vector2(size.x - 28, 48))
 	draw_rect(bar.grow(3), Color("1c1612"))
 	draw_rect(bar, Color("3a2f28"))
 	for band in bands:
 		var r := Rect2(bar.position + Vector2(bar.size.x * float(band.from), 0), Vector2(bar.size.x * (float(band.to) - float(band.from)), bar.size.y))
 		draw_rect(r, Color(1, 1, 1, 0.04 if int(band.get("index", 0)) % 2 == 0 else 0.09))
-		draw_string(_font, r.position + Vector2(6, r.size.y + 20), String(band.name), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 6, 13, Style.MUTED)
+		draw_string(_font, r.position + Vector2(6, r.size.y + 24), String(band.name), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 6, Style.ui.readable(13), Style.MUTED)
 	if zones_visible():
 		for zone in zones:
 			var colour := Color(zone.color)
@@ -97,11 +97,14 @@ func _draw() -> void:
 			draw_rect(core, Color(colour.lightened(0.35), 0.9))
 			var label: String = String(zone.label)
 			if not label.is_empty():
-				draw_string(_font, Vector2(r.position.x - 30, bar.position.y - 10), label, HORIZONTAL_ALIGNMENT_CENTER, r.size.x + 60, 15, colour.lightened(0.4))
+				draw_string(_font, Vector2(r.position.x - 30, bar.position.y - 12), label, HORIZONTAL_ALIGNMENT_CENTER, r.size.x + 60, Style.ui.readable(15), colour.lightened(0.4))
 	elif reveal_delay >= 0.0 and _elapsed < reveal_delay:
-		draw_string(_font, Vector2(bar.position.x, bar.position.y - 10), "Watching the rep…", HORIZONTAL_ALIGNMENT_CENTER, bar.size.x, 15, Style.MUTED)
+		draw_string(_font, Vector2(bar.position.x, bar.position.y - 12), "Watching the rep…", HORIZONTAL_ALIGNMENT_CENTER, bar.size.x, Style.ui.readable(15), Style.MUTED)
 	var x: float = bar.position.x + bar.size.x * marker
-	draw_line(Vector2(x, bar.position.y - 6), Vector2(x, bar.end.y + 6), Color.WHITE, 4.0)
-	draw_colored_polygon(PackedVector2Array([Vector2(x - 9, bar.position.y - 14), Vector2(x + 9, bar.position.y - 14), Vector2(x, bar.position.y - 2)]), Color.WHITE)
+	# A wide marker and arrow, so the stop point reads on a phone.
+	draw_line(Vector2(x, bar.position.y - 6), Vector2(x, bar.end.y + 8), Color.WHITE, 5.0)
+	var tip := PackedVector2Array([Vector2(x - 13, bar.position.y - 20), Vector2(x + 13, bar.position.y - 20), Vector2(x, bar.position.y - 2)])
+	draw_colored_polygon(tip, Color.WHITE)
+	draw_polyline(tip + PackedVector2Array([tip[0]]), Color("1c1612"), 2.0)
 	if _flash > 0.0:
 		draw_rect(bar.grow(6), Color(_flash_color, _flash * 0.8), false, 4.0)

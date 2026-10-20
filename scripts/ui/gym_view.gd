@@ -85,7 +85,6 @@ func _process(delta: float) -> void:
 		if _walk_left <= 0.0:
 			pose = "stand"
 			tempo = 0.0
-			facing = 1.0
 			arrived.emit()
 	queue_redraw()
 

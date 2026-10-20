@@ -121,7 +121,7 @@ func _minigame_name(id: String) -> String:
 
 func _exercise_picker(index: int) -> OptionButton:
 	var picker := OptionButton.new()
-	picker.custom_minimum_size = Vector2(215, 40)
+	picker.custom_minimum_size = Vector2(215, 46)
 	picker.fit_to_longest_item = false
 	picker.clip_text = true
 	var available: Array = RoutineRules.available_exercises(game)
@@ -153,7 +153,7 @@ func _load_picker(entry: Dictionary, def: Dictionary) -> HBoxContainer:
 			entry.load = load_id
 			_rebuild()
 		var button: Button = Style.ui.button(load_id.capitalize(), choose, entry.load == load_id, 14)
-		button.custom_minimum_size = Vector2(66, 38)
+		button.custom_minimum_size = Vector2(72, 46)
 		row.add_child(button)
 	return row
 
@@ -161,17 +161,17 @@ func _load_picker(entry: Dictionary, def: Dictionary) -> HBoxContainer:
 func _stepper(label: String, value: String, change: Callable, can_down: bool, can_up: bool) -> HBoxContainer:
 	var row: HBoxContainer = Style.ui.hbox(4)
 	row.add_child(Style.ui.label(label, 14, Style.MUTED))
-	var down: Button = Style.ui.button("−", func() -> void: change.call(-1), false, 16)
+	var down: Button = Style.ui.button("−", func() -> void: change.call(-1), false, 22)
 	down.disabled = not can_down
-	down.custom_minimum_size = Vector2(36, 38)
+	down.custom_minimum_size = Vector2(46, 46)
 	row.add_child(down)
 	var shown: Label = Style.ui.utility(value, 16)
 	shown.custom_minimum_size.x = 48
 	shown.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	row.add_child(shown)
-	var up: Button = Style.ui.button("+", func() -> void: change.call(1), false, 16)
+	var up: Button = Style.ui.button("+", func() -> void: change.call(1), false, 22)
 	up.disabled = not can_up
-	up.custom_minimum_size = Vector2(36, 38)
+	up.custom_minimum_size = Vector2(46, 46)
 	row.add_child(up)
 	return row
 
