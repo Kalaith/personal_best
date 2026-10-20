@@ -1,0 +1,20 @@
+{
+	"schema_version": 1,
+	"starting": [
+		{"id": "floor_mats", "name": "Floor mats", "slots": 1},
+		{"id": "dumbbells", "name": "Dumbbell set (2-20 kg)", "slots": 1},
+		{"id": "skipping_ropes", "name": "Skipping ropes", "slots": 1},
+		{"id": "step_box", "name": "Step box", "slots": 1},
+		{"id": "road_loop", "name": "Local road loop", "slots": 0}
+	],
+	"items": [
+		{"id": "foam_rollers", "name": "Foam rollers", "cost": 60, "reputation": 1, "slots": 1, "effects": [], "about": "Unlocks mobility and foam rolling, the only exercise that trains Recovery and removes fatigue."},
+		{"id": "hr_monitor", "name": "Heart-rate monitor", "cost": 150, "reputation": 1, "slots": 0, "effects": ["show_energy"], "about": "Shows the exact energy value and heart rate during sessions, so amber is never a guess."},
+		{"id": "rowing_machine", "name": "Rowing machine", "cost": 350, "reputation": 1, "slots": 1, "effects": [], "about": "Unlocks rowing: low-impact Endurance work with little fatigue."},
+		{"id": "treadmill", "name": "Treadmill", "cost": 400, "reputation": 1, "slots": 1, "effects": ["weatherproof_runs", "precise_pace"], "about": "Runs go ahead at full value in bad weather, and the pace display widens the Perfect band in pace coaching."},
+		{"id": "barbell_rack", "name": "Barbell and rack", "cost": 600, "reputation": 2, "slots": 1, "effects": [], "about": "Unlocks the barbell back squat for heavier Strength work."},
+		{"id": "track_membership", "name": "Running track membership", "cost": 800, "reputation": 2, "slots": 0, "effects": ["full_intervals"], "about": "Intervals on a measured track count at full value instead of 80% on the road loop."},
+		{"id": "shed_extension", "name": "Shed extension", "cost": 1500, "reputation": 2, "slots": 0, "effects": ["capacity"], "clients": 2, "extra_slots": 3, "about": "+2 client capacity and +3 equipment slots."},
+		{"id": "small_studio", "name": "Small studio", "cost": 5000, "reputation": 4, "slots": 0, "effects": ["capacity"], "clients": 3, "extra_slots": 6, "about": "+3 client capacity and +6 equipment slots."}
+	]
+}

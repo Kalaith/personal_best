@@ -1,0 +1,131 @@
+{
+	"schema_version": 1,
+	"targets": {
+		"finish": {"name": "Finish", "describe": "Finish inside the {cutoff} cut-off"},
+		"time": {"name": "Target time", "describe": "Finish under {time}"}
+	},
+	"personalities": [
+		{"id": "competitive", "name": "Competitive", "approach": "competitive", "about": "Lights up at a challenge. Talk numbers, rivals and beating last week."},
+		{"id": "anxious", "name": "Anxious", "approach": "calm", "about": "Worries about doing it wrong. Calm, steady reassurance works best."},
+		{"id": "social", "name": "Social", "approach": "upbeat", "about": "Feeds off energy and company. Be upbeat and chatty."},
+		{"id": "analytical", "name": "Analytical", "approach": "informative", "about": "Wants to know why. Explain what the effort is doing."}
+	],
+	"clients": [
+		{
+			"id": "jordan",
+			"name": "Jordan Reyes",
+			"short": "Jordan",
+			"pronoun": "he",
+			"age": 20,
+			"life": "University student, plays five-a-side football twice a week.",
+			"intake": "Fit from football and quick over short distances, but has never run further than 10 km. Pushes hard on every rep.",
+			"experience": "some",
+			"personality": "competitive",
+			"target": {"type": "time", "minutes": 210},
+			"requirements": {"endurance": 85, "pace": 78, "strength": 60, "recovery": 60, "knowledge": 60},
+			"attributes": {"endurance": 18, "pace": 22, "strength": 28, "recovery": 26, "knowledge": 6},
+			"motivation": 80,
+			"rapport": 20,
+			"fee": 35,
+			"available_days": ["Tue", "Thu"],
+			"sessions_per_week": 1,
+			"own_sessions_per_week": 3,
+			"unavailable_weeks": [{"week": 6, "reason": "exam week"}],
+			"check_in_weights": {"fresh": 4, "poor_sleep": 3, "sore_legs": 1, "stressed": 2},
+			"look": {"skin": "8d5a3b", "hair": "1d1512", "hair_style": "short", "top": "2f7fbf", "shorts": "26303d", "build": 0.9, "height": 1.05},
+			"intro": [
+				"Hey! Jordan. My mate ran the Harbour City Marathon last year in 3:45 and hasn't shut up about it.",
+				"I want under three and a half hours. I'm fit, I play football. How hard can it be?",
+				"I can do Tuesdays or Thursdays. I'll run on my own the rest of the week, obviously."
+			],
+			"suggested": {
+				"base": [
+					{"exercise": "long_run", "sets": 1, "load": "moderate"},
+					{"exercise": "tempo_run", "sets": 1, "load": "moderate"},
+					{"exercise": "goblet_squat", "sets": 3, "kg": 10},
+					{"exercise": "foam_rolling", "sets": 2, "load": "easy"},
+					{"exercise": "easy_run", "sets": 1, "load": "moderate"}
+				],
+				"build": [
+					{"exercise": "long_run", "sets": 1, "load": "moderate"},
+					{"exercise": "intervals", "sets": 6, "load": "moderate"},
+					{"exercise": "goblet_squat", "sets": 3, "kg": 12},
+					{"exercise": "foam_rolling", "sets": 2, "load": "easy"},
+					{"exercise": "tempo_run", "sets": 1, "load": "moderate"}
+				],
+				"peak": [
+					{"exercise": "long_run", "sets": 1, "load": "moderate"},
+					{"exercise": "intervals", "sets": 6, "load": "hard"},
+					{"exercise": "barbell_squat", "sets": 3, "kg": 50},
+					{"exercise": "lunges", "sets": 3, "kg": 12},
+					{"exercise": "foam_rolling", "sets": 2, "load": "easy"},
+					{"exercise": "tempo_run", "sets": 1, "load": "moderate"}
+				],
+				"taper": [
+					{"exercise": "easy_run", "sets": 1, "load": "easy"},
+					{"exercise": "tempo_run", "sets": 1, "load": "easy"},
+					{"exercise": "foam_rolling", "sets": 2, "load": "easy"},
+					{"exercise": "core_circuit", "sets": 2, "load": "easy"}
+				]
+			}
+		},
+		{
+			"id": "peg",
+			"name": "Margaret \"Peg\" Holloway",
+			"short": "Peg",
+			"pronoun": "she",
+			"age": 60,
+			"life": "Retired librarian. Walks her terrier every morning; has never run.",
+			"intake": "Walks well but runs for barely a minute before stopping. Sore knees after long walks. Worried she'll embarrass herself.",
+			"experience": "none",
+			"personality": "anxious",
+			"target": {"type": "finish", "minutes": 360},
+			"requirements": {"endurance": 60, "pace": 25, "strength": 45, "recovery": 45, "knowledge": 45},
+			"attributes": {"endurance": 10, "pace": 6, "strength": 15, "recovery": 16, "knowledge": 10},
+			"motivation": 65,
+			"rapport": 10,
+			"fee": 45,
+			"available_days": ["Mon", "Wed", "Fri"],
+			"sessions_per_week": 1,
+			"own_sessions_per_week": 2,
+			"unavailable_weeks": [{"week": 3, "reason": "visiting her grandchildren"}],
+			"check_in_weights": {"fresh": 2, "poor_sleep": 2, "sore_legs": 4, "stressed": 2},
+			"look": {"skin": "f0c8a8", "hair": "c9c4c0", "hair_style": "bob", "top": "c0567a", "shorts": "3d3346", "build": 1.35, "height": 0.95},
+			"intro": [
+				"Hello, I'm Peg. My late husband always said he'd run a marathon one day. He never did.",
+				"I'd like to finish the Harbour City Marathon for him. Just finish, before they take the timing mats away.",
+				"I've never really run. Is that... silly, at my age? I'm free Mondays, Wednesdays and Fridays."
+			],
+			"suggested": {
+				"base": [
+					{"exercise": "long_run", "sets": 1, "load": "easy"},
+					{"exercise": "easy_run", "sets": 1, "load": "easy"},
+					{"exercise": "step_ups", "sets": 2, "kg": 4},
+					{"exercise": "foam_rolling", "sets": 2, "load": "easy"},
+					{"exercise": "core_circuit", "sets": 2, "load": "easy"}
+				],
+				"build": [
+					{"exercise": "long_run", "sets": 1, "load": "moderate"},
+					{"exercise": "tempo_run", "sets": 1, "load": "moderate"},
+					{"exercise": "step_ups", "sets": 3, "kg": 6},
+					{"exercise": "foam_rolling", "sets": 2, "load": "easy"},
+					{"exercise": "easy_run", "sets": 1, "load": "moderate"}
+				],
+				"peak": [
+					{"exercise": "long_run", "sets": 1, "load": "moderate"},
+					{"exercise": "tempo_run", "sets": 1, "load": "moderate"},
+					{"exercise": "goblet_squat", "sets": 3, "kg": 8},
+					{"exercise": "rowing", "sets": 1, "load": "moderate"},
+					{"exercise": "foam_rolling", "sets": 2, "load": "easy"},
+					{"exercise": "easy_run", "sets": 1, "load": "moderate"}
+				],
+				"taper": [
+					{"exercise": "easy_run", "sets": 1, "load": "easy"},
+					{"exercise": "long_run", "sets": 1, "load": "easy"},
+					{"exercise": "foam_rolling", "sets": 2, "load": "easy"},
+					{"exercise": "core_circuit", "sets": 2, "load": "easy"}
+				]
+			}
+		}
+	]
+}

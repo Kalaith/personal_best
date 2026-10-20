@@ -1,0 +1,80 @@
+{
+	"schema_version": 1,
+	"questions": [
+		{"id": "sleep", "label": "How did you sleep?"},
+		{"id": "legs", "label": "How are the legs?"},
+		{"id": "week", "label": "How's your week?"},
+		{"id": "ready", "label": "Ready to go?"}
+	],
+	"check_in_states": [
+		{"id": "fresh", "question": "ready", "energy": 5, "mood": 10, "hint": "{name} is bouncing on their toes at the door.", "answer": "Honestly? I feel brilliant today.", "adapt": "You keep the warm-up short and let them get stuck in."},
+		{"id": "poor_sleep", "question": "sleep", "energy": -15, "mood": -5, "hint": "{name} yawns twice before taking off their coat.", "answer": "Barely slept. Maybe four hours.", "adapt": "You add a longer, gentler warm-up to wake them up."},
+		{"id": "sore_legs", "question": "legs", "energy": -15, "mood": 0, "hint": "{name} walks in a little stiffly, rubbing a calf.", "answer": "Calves are tight from the weekend.", "adapt": "You add some mobility first so the soreness eases."},
+		{"id": "stressed", "question": "week", "energy": -8, "mood": -15, "hint": "{name} keeps checking their phone, jaw tight.", "answer": "Rough week. Can't switch off.", "adapt": "You talk it through for a minute; their shoulders drop."}
+	],
+	"approaches": [
+		{"id": "calm", "name": "Calm", "line": "Nice and steady. You're doing exactly what you need to.", "color": "6fa8c9"},
+		{"id": "upbeat", "name": "Upbeat", "line": "Yes! Look at you go! Big energy!", "color": "e8b44c"},
+		{"id": "competitive", "name": "Competitive", "line": "Last week's you is right behind. Don't let him catch you.", "color": "d9643a"},
+		{"id": "informative", "name": "Informative", "line": "This is the bit that builds your aerobic engine. Hold it here.", "color": "8fb36a"}
+	],
+	"approach_right": {
+		"competitive": "Jordan grins and digs in. \"Not a chance.\"",
+		"anxious": "Peg's shoulders drop. She breathes out and keeps going.",
+		"social": "They laugh and pick up the rhythm.",
+		"analytical": "They nod. Knowing why makes it easier."
+	},
+	"approach_wrong": {
+		"competitive": "Jordan rolls his eyes. Gentle talk bores him.",
+		"anxious": "Peg tenses up. Pressure makes her worry she's failing.",
+		"social": "They go quiet. The mood dips.",
+		"analytical": "They frown. That didn't tell them anything."
+	},
+	"signals": {
+		"green": {"name": "Fresh", "cues": ["Steady breathing, good form, smiling.", "Light on their feet and chatting.", "Relaxed shoulders, easy rhythm."]},
+		"amber": {"name": "Working", "cues": ["Heavy breathing, focused face.", "Quiet now, jaw set, working hard.", "Sweating and concentrating on every step."]},
+		"red": {"name": "Overreaching", "cues": ["Form breaking down, grimacing, slowing.", "Gasping, shoulders hunched, stumbling a little.", "Wincing on each stride, arms flailing."]}
+	},
+	"peak_feedback": {
+		"green_push": "They were fresh, so pushing was right: extra work, well spent.",
+		"green_hold": "They were fresh. Holding back wasted a good chance to train.",
+		"amber_push_right": "Working hard in a {block} block is the point. Pushing paid off.",
+		"amber_push_wrong": "In a {block} block, amber means bank the work. Pushing just piled on fatigue.",
+		"amber_hold_right": "In a {block} block, amber is enough. Holding back kept fatigue down.",
+		"amber_hold_wrong": "In a {block} block amber is where gains are made. Holding back cost progress.",
+		"red_hold": "They were overreaching. Holding back was the right call.",
+		"red_push": "They were already overreaching. Pushing risked injury and added a lot of fatigue.",
+		"missed": "No clear call at the key moment. The chance passed."
+	},
+	"moments": {
+		"endurance": {"weak": "Hit the wall at {km} km and walked long stretches.", "strong": "Still running smoothly at {km} km while others walked."},
+		"pace": {"weak": "Couldn't hold goal pace after halfway.", "strong": "Held goal pace comfortably through halfway."},
+		"strength": {"weak": "Form fell apart over the last 10 km; calves cramped at {km} km.", "strong": "Strong legs held good form right to the finish."},
+		"recovery": {"weak": "Started the race with heavy legs from training.", "strong": "Arrived at the start line fresh and rested."},
+		"knowledge": {"weak": "Went out far too fast in the first 5 km and paid for it.", "strong": "Ran even splits, exactly as planned."}
+	},
+	"guidance": {
+		"endurance": "Endurance is lagging. Easy runs, long runs and rowing build it; make sure the long run happens every week.",
+		"pace": "Pace is lagging. Tempo runs and intervals raise it, but only in Build and Peak blocks.",
+		"strength": "Strength is lagging. Squats, lunges, step-ups and core work help; pick weights they can lift with good form.",
+		"recovery": "Recovery is lagging. Foam rolling and lighter weeks help; a tired client gains less from every session.",
+		"knowledge": "Pacing Knowledge is lagging. Hitting the right effort in pace coaching teaches it."
+	},
+	"advice": {
+		"no_hard": "{exercise} on Hard stops being what it is for. Use Easy or Moderate.",
+		"beginner_no_hard": "{name} is new to training. {exercise} on Hard risks injury.",
+		"taper_no_hard": "The taper is for arriving fresh. A Hard {exercise} undoes it.",
+		"base_caution_new": "{name} has no running base yet. Intervals in the Base block are too much, too soon.",
+		"base_caution": "Intervals this early help less than building the base first.",
+		"kg_heavy": "{kg} kg is too heavy for {name} right now (about {fit} kg suits). Form will break down.",
+		"kg_light": "{kg} kg is light for {name}. It will work, but gently.",
+		"weakness": "{exercise} targets {attribute}, one of {name}'s weakest areas.",
+		"met": "{name} already has the {attribute} the goal needs. {exercise} will do little.",
+		"goal_fit_low": "{exercise} matters less for a {target} goal.",
+		"goal_fit_high": "{exercise} suits a {target} goal well.",
+		"weather": "Rain is forecast; outdoor runs will be cut short without a treadmill.",
+		"road_intervals": "Intervals on the road loop are imprecise (80% value). A track membership fixes this.",
+		"no_long_run": "No long run in the plan. It's the most marathon-specific session there is.",
+		"too_tiring": "This plan adds about {fatigue} fatigue per session. {name} may arrive tired next time."
+	}
+}
