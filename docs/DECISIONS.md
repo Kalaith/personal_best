@@ -52,7 +52,14 @@ the numbers are tuned only against the scripted coaches in `tools/season_sim.gd`
 
 - **Progress uses session performance** (the average of all minigame scores)
   as the GDD says, not per-exercise scores. The wrap-up still shows each
-  exercise's score.
+  exercise's coaching score and says that the average scales every
+  exercise's gains.
+- **The wrap-up leads with one takeaway of each kind:** "What worked" and
+  "Next time". The session notes lessons as it goes (a red stop, a red push,
+  the wrong encouragement for the moment, a missed check-in) with a
+  priority; the report adds unsuitable exercises, weak or sharp minigames
+  and arriving tired. The highest priority of each kind is shown.
+  `session_takeaways.gd`.
 - **The check-in does not count toward performance.** It sets starting
   energy and mood. The client's condition today (fresh, poor sleep, sore
   legs, stressed) is drawn per session with per-client weights; a hint line
@@ -73,8 +80,20 @@ the numbers are tuned only against the scripted coaches in `tools/season_sim.gd`
   calls also teach Pacing Knowledge (the GDD credits only pace coaching;
   without this Jordan's Pacing Knowledge stalled whenever tempo runs left
   his plan).
-- **Encouragement:** the right approach scores as normal, a wrong approach
-  0.2. Approach zones are shuffled each press.
+- **Stop ends the exercise.** The client walks it off (+15 energy) and the
+  session moves on with no closing peak. Stopping on red keeps full credit:
+  the skipped repeats are not scored. Stopping a client who had more in
+  them scores the skipped repeats as 0. The wrap-up says where they stopped.
+  `session_sim.gd → _stop_exercise`, `balance.json → effort`.
+- **Encouragement reads the moment, not just the personality.** Each press
+  draws a situation: steady (use their usual approach), exhausted (calm),
+  frustrated (informative) or flying (competitive; upbeat for Anxious
+  clients). Red/amber energy makes exhausted likely, a poor last press or low
+  mood frustrated, a perfect last press or high mood flying. The cue line
+  describes the situation. Right approach scores as normal, their usual
+  approach when the moment wanted another 0.5, anything else 0.2. Approach
+  zones are shuffled each press. `encouragement.gd`,
+  `lines.json → encouragement_situations`, `balance.json → encouragement`.
 - **Energy** starts at 100 − fatigue (adjusted by the check-in) and drains
   each press by exercise intensity × load, eased by Endurance. Pushing at a
   peak drains more; holding back restores a little.
@@ -138,19 +157,29 @@ the numbers are tuned only against the scripted coaches in `tools/season_sim.gd`
 - **Heart-rate monitor uses no slot**; foam rollers do. The starting kit
   fills 4 of 6 slots, so before the shed extension only two of foam
   rollers / rowing machine / treadmill / barbell fit.
-- **The small studio is listed but unreachable** in a single season (needs
-  reputation 4 before the race). It works if reached.
+- **Only gym upgrades that pay off this season are for sale.** The shed
+  extension is $700 (was $1,500) and sold for its +3 equipment slots; its +2
+  client capacity is labelled as for later seasons. The small studio is
+  marked `future` in `shop.json`: listed under "Later seasons", not
+  buyable.
+- **Race projection from week 8.** The planner shows the finishing range if
+  the race were run today (today's readiness and fatigue, ± race-day luck)
+  and whether the goal is on track, in reach or not yet.
+  `Readiness.projection`, `balance.json → event.projection_from_week`.
 
 ## Balance as tuned (season_sim, 8 seeds each)
 
 | Coach | Jordan race readiness | Jordan goals | Peg race readiness | Peg goals |
 |---|---|---|---|---|
-| Good (follows suggestions, reads signals) | ~89 % | 5/8 | ~93 % | 8/8 |
-| Average | ~76 % | 0/8 | ~81 % | 2/8 |
-| Careless (pushes every peak) | ~56 % | 0/8 | ~61 % | 0/8 |
+| Good (follows suggestions, reads signals) | ~89 % | 4/8 | ~96 % | 8/8 |
+| Average | ~76 % | 0/8 | ~88 % | 6/8 |
+| Careless (pushes every peak) | ~58 % | 0/8 | ~71 % | 1/8 |
 
-Jordan's sub-3:30 is meant to be the hard target. Review after playtesting
-whether average play should reach Peg's goal more often.
+Jordan's sub-3:30 is meant to be the hard target. Peg's requirements were
+lowered (Endurance 55, Strength, Recovery and Pacing Knowledge 40) so an
+ordinary first season usually gets her over the line; before that the
+average coach finished 2/8. These are scripted policies, not human success
+rates: review after playtesting.
 
 ## Presentation
 

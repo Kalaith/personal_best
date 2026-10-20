@@ -127,7 +127,7 @@ func _correct_zone(sim: SessionSim, beat: Dictionary) -> String:
 		"cue":
 			return beat.fault.cue
 		"encouragement":
-			return sim.catalog.personalities[sim.client.def.personality].approach
+			return beat.best
 		"effort":
 			return {"green": "continue", "amber": "continue" if sim.block().push_on_amber else "ease", "red": "stop"}[beat.signal]
 		"peak":

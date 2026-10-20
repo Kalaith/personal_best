@@ -31,11 +31,19 @@ func _ready() -> void:
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(list)
 	var first: Button = null
+	var later: Array = []
 	for id in game.catalog.shop_order:
+		if ShopRules.is_future(game, id):
+			later.append(id)
+			continue
 		var row: Array = _item_row(id)
 		list.add_child(row[0])
 		if first == null and row[1] != null and not row[1].disabled:
 			first = row[1]
+	if not later.is_empty():
+		list.add_child(Style.ui.label("Later seasons: not available in this prototype", 16, Style.MUTED))
+		for id in later:
+			list.add_child(_item_row(id)[0])
 	var back: Button = Style.ui.button("Back to the planner", func() -> void: closed.emit(), first == null)
 	back.size_flags_horizontal = Control.SIZE_SHRINK_END
 	column.add_child(back)
@@ -60,6 +68,10 @@ func _item_row(id: String) -> Array:
 		return [panel, null]
 	if game.pending.has(id):
 		row.add_child(Style.ui.label("Arriving next week", 15, Style.ACCENT))
+		return [panel, null]
+	if ShopRules.is_future(game, id):
+		panel.modulate.a = 0.6
+		row.add_child(Style.ui.label("Coming later", 15, Style.MUTED))
 		return [panel, null]
 	var problem: String = ShopRules.problem(game, id)
 	if not problem.is_empty():

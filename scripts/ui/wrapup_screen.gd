@@ -1,7 +1,8 @@
 extends Control
-## After a session: how it went, what it built and why. Every peak moment
-## is explained, unsuitable entries say what was wrong, and the payment is
-## shown last.
+## After a session: how it went, what it built and why. It leads with one
+## thing that worked and one to change next time; below that every peak
+## moment is explained, unsuitable entries say what was wrong, and the
+## payment is shown last.
 const Style = preload("res://scripts/ui/style.gd")
 const Widgets = preload("res://scripts/ui/widgets.gd")
 const Catalog = preload("res://scripts/core/catalog.gd")
@@ -24,7 +25,8 @@ func _ready() -> void:
 	column.add_child(header)
 	header.add_child(Style.ui.heading("Session wrap-up: %s" % client.def.short, 30))
 	header.add_child(Style.ui.spacer())
-	header.add_child(Style.ui.utility("Performance %d%%" % int(round(report.performance * 100.0)), 22, Style.ui.palette.level_color(report.performance)))
+	header.add_child(Style.ui.utility("Session performance %d%%" % int(round(report.performance * 100.0)), 22, Style.ui.palette.level_color(report.performance)))
+	column.add_child(_takeaways(client))
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -43,6 +45,29 @@ func _ready() -> void:
 	go.grab_focus.call_deferred()
 
 
+## What worked, what to change, and how performance turns into progress.
+func _takeaways(client: RefCounted) -> PanelContainer:
+	var parts: Array = Widgets.card("", 0.97)
+	var inner: VBoxContainer = parts[1]
+	var lines: Dictionary = report.takeaways
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 14)
+	grid.add_theme_constant_override("v_separation", 6)
+	inner.add_child(grid)
+	grid.add_child(Style.ui.label("What worked", 17, Style.GREEN))
+	var worked: Label = Style.ui.wrapped(lines.worked, 16, Style.PAPER)
+	worked.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_child(worked)
+	grid.add_child(Style.ui.label("Next time", 17, Style.AMBER))
+	var change: Label = Style.ui.wrapped(lines.change, 16, Style.PAPER)
+	change.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_child(change)
+	var share: int = int(round(report.performance * 100.0))
+	inner.add_child(Style.ui.wrapped("Session performance (%d%%) is the average of every exercise's coaching score below, and it scales the gains from every exercise in the session, not just the one you scored. Strong coaching anywhere lifts %s's progress everywhere." % [share, client.def.short], 13))
+	return parts[0]
+
+
 func _exercises_column() -> VBoxContainer:
 	var column: VBoxContainer = Style.ui.vbox(10)
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -53,8 +78,10 @@ func _exercises_column() -> VBoxContainer:
 		parts[1].add_child(Style.ui.wrapped(check_in.text, 14, Style.GREEN if check_in.correct else Style.AMBER))
 		column.add_child(parts[0])
 	for exercise in report.exercises:
-		var parts: Array = Widgets.card("%s  ·  %d%%" % [exercise.name, int(round(exercise.score * 100.0))], 0.9)
+		var parts: Array = Widgets.card("%s  ·  coaching %d%%" % [exercise.name, int(round(exercise.score * 100.0))], 0.9)
 		var inner: VBoxContainer = parts[1]
+		if int(exercise.stopped_after) > 0:
+			inner.add_child(Style.ui.wrapped("Stopped after repeat %d of %d, then recovered." % [int(exercise.stopped_after), int(exercise.presses)], 14, Style.ACCENT))
 		for peak in exercise.peaks:
 			var choice: String = {"push": "Pushed", "hold": "Held back"}.get(peak.choice, "No call")
 			inner.add_child(Style.ui.wrapped("%s %s on %s: %s" % [Style.tone_mark(peak.tone), choice, peak.signal, peak.text], 14, Style.tone_color(peak.tone)))
@@ -104,5 +131,5 @@ func _progress_column(client: RefCounted) -> VBoxContainer:
 		lines.add_child(Style.ui.wrapped("%s arrived carrying fatigue, so this session counted for %d%%." % [client.def.short, int(round(report.fatigue_modifier * 100.0))], 13, Style.AMBER))
 	if report.injured:
 		lines.add_child(Style.ui.wrapped("× Minor injury: %s will miss next week's session." % client.def.short, 15, Style.RED))
-	lines.add_child(Style.ui.wrapped("Progress = routine value × suitability × performance × fatigue × peak bonuses.", 12))
+	lines.add_child(Style.ui.wrapped("Progress from each exercise = routine value × suitability × session performance × fatigue × that exercise's peak bonuses.", 12))
 	return column

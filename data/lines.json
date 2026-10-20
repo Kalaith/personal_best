@@ -30,6 +30,19 @@
 		"social": "They go quiet. The mood dips.",
 		"analytical": "They frown. That didn't tell them anything."
 	},
+	"encouragement_situations": [
+		{"id": "steady", "state": "settled", "approach": "", "cue": ""},
+		{"id": "exhausted", "state": "exhausted", "approach": "calm", "cue": "{name} is labouring now: head down, every stride an effort.", "right": "{name} settles into your calm voice and keeps moving. Pressure would have broken them.", "wrong": "{name} has nothing left for that. They slow to a walk for a few steps."},
+		{"id": "frustrated", "state": "frustrated", "approach": "informative", "cue": "{name} shakes their head and mutters about that last bit.", "right": "Hearing what the work is doing turns {name}'s frustration into focus.", "wrong": "{name} is frustrated, and that didn't touch it. They stay tense."},
+		{"id": "confident", "state": "flying", "approach": "competitive", "overrides": {"anxious": "upbeat"}, "cue": "{name} is flying: grinning, light on their feet, looking for more.", "right": "{name} rides the moment and lifts the effort.", "wrong": "{name} was ready for more, and that took the shine off it."}
+	],
+	"encouragement_usual": "{usual} is {name}'s usual, so it half works. But {name} is {state} right now: {best} would have helped more.",
+	"minigame_advice": {
+		"pace": "In {exercise}, wait for the marker to reach the green band: it is the effort they should hold, not a guess.",
+		"technique": "In {exercise}, watch for the fault to flash up before pressing, then pick the cue that fixes that fault.",
+		"encouragement": "In {exercise}, read the cue line before choosing: how {name} looks right now matters as much as their personality.",
+		"effort": "In {exercise}, decide from the signal colour: continue on green, stop on red, and on amber follow the block rule."
+	},
 	"signals": {
 		"green": {"name": "Fresh", "cues": ["Steady breathing, good form, smiling.", "Light on their feet and chatting.", "Relaxed shoulders, easy rhythm."]},
 		"amber": {"name": "Working", "cues": ["Heavy breathing, focused face.", "Quiet now, jaw set, working hard.", "Sweating and concentrating on every step."]},

@@ -9,6 +9,7 @@ const Balance = preload("res://addons/hatchery/core/balance.gd")
 const Det = preload("res://addons/hatchery/core/det.gd")
 const Beats = preload("res://scripts/core/session_beats.gd")
 const RoutineRules = preload("res://scripts/core/routine_rules.gd")
+const Encouragement = preload("res://scripts/core/encouragement.gd")
 
 var game: RefCounted
 var client: RefCounted
@@ -32,6 +33,11 @@ var injured: bool = false
 var motivation_change: float = 0.0
 var extra_fatigue: float = 0.0
 var done: bool = false
+## Score of the last counted press (the check-in counts here), -1 before any.
+var last_score: float = -1.0
+## Coaching takeaways noticed along the way: {kind: "worked"/"change",
+## priority, text}. The wrap-up leads with the strongest of each kind.
+var lessons: Array = []
 
 
 func _init(owner: RefCounted, state: RefCounted, booked_day: String) -> void:
@@ -74,6 +80,8 @@ func _make_record(entry: Dictionary) -> Dictionary:
 		"peak_bonus": 0.0,
 		"knowledge_hits": 0.0,
 		"crossed": false,
+		## Repeat number the client stopped after, or 0 when they did them all.
+		"stopped_after": 0,
 		"intensity": RoutineRules.intensity(entry, client, def),
 	}
 
@@ -141,6 +149,7 @@ func _check_in_beat() -> Dictionary:
 func _resolve_check_in(position: float) -> Dictionary:
 	var hit: Dictionary = Beats.hit(beat.zones, position)
 	var correct: bool = hit.zone_id == condition.question
+	var name: String = client.def.short
 	var base: float = 100.0 - client.fatigue
 	var change: float = float(condition.energy)
 	var text: String
@@ -162,6 +171,12 @@ func _resolve_check_in(position: float) -> Dictionary:
 	energy = clampf(base + change, 5.0, 100.0)
 	mood = clampf(mood, 0.0, 100.0)
 	check_in = {"correct": correct, "grade": hit.grade, "question": hit.zone_id, "text": text}
+	last_score = 1.0 if correct else 0.0
+	var asked: String = _question_label(condition.question)
+	if correct and condition.id != "fresh":
+		_lesson("worked", 2.0, "Asking \"%s\" at the check-in let you adapt the session to how %s really was." % [asked, name])
+	elif not correct:
+		_lesson("change", 3.0, "Read the walk-in before the check-in: %s \"%s\" was the question that fitted." % [String(condition.hint).format({"name": name}), asked])
 	_next_exercise()
 	return {"grade": "right" if correct else hit.grade if hit.grade == "miss" else "wrong", "score": 1.0 if correct else 0.0, "text": text, "tone": tone}
 
@@ -221,7 +236,14 @@ func _normal_beat() -> Dictionary:
 			result["window_seconds"] = Balance.number("bar.technique_window_passes") * float(result.pass_seconds)
 			return result
 		"encouragement":
-			var result: Dictionary = _common("encouragement", def.cue + " Choose how to encourage them.")
+			var situation: String = Encouragement.draw(rng, current_signal(), mood, last_score)
+			var result: Dictionary = _common("encouragement", def.cue + " Read how they are right now, then choose how to encourage them.")
+			var words: Dictionary = {"name": client.def.short}
+			var cue: String = String(Encouragement.find(catalog, situation).cue)
+			if not cue.is_empty():
+				result["cue"] = cue.format(words)
+			result["situation"] = situation
+			result["best"] = Encouragement.best(catalog, client, situation)
 			result["zones"] = Beats.choices(rng, catalog.lines.approaches)
 			return result
 		"effort":
@@ -244,6 +266,7 @@ func _after_press(score: float, drain_scale: float = 1.0) -> void:
 	var rec: Dictionary = record()
 	rec.scores.append(score)
 	rec.done += 1
+	last_score = score
 	var before: float = energy
 	_drain(rec.intensity * drain_scale)
 	var line: float = Balance.number("energy.peak_on_cross")
@@ -319,22 +342,48 @@ func _resolve_cue(position: float) -> Dictionary:
 
 func _resolve_encouragement(position: float) -> Dictionary:
 	var hit: Dictionary = Beats.hit(beat.zones, position)
-	var personality: Dictionary = catalog.personalities[client.def.personality]
+	var personality: String = client.def.personality
+	var usual: String = catalog.personalities[personality].approach
+	var best: String = beat.best
+	var situation: Dictionary = Encouragement.find(catalog, beat.situation)
+	var steady: bool = beat.situation == "steady"
+	var words: Dictionary = {
+		"name": client.def.short,
+		"state": situation.state,
+		"usual": Encouragement.approach_name(catalog, usual),
+		"best": Encouragement.approach_name(catalog, best).to_lower(),
+	}
 	var outcome: Dictionary
-	if hit.zone_id == personality.approach:
-		outcome = {"grade": hit.grade, "score": Beats.grade_score(hit.grade), "text": catalog.lines.approach_right[client.def.personality], "tone": "good"}
+	if hit.zone_id == best:
+		var text: String = catalog.lines.approach_right[personality] if steady else String(situation.right).format(words)
+		outcome = {"grade": hit.grade, "score": Beats.grade_score(hit.grade), "text": text, "tone": "good"}
 		_change_rapport(Balance.number("encouragement.right_rapport"))
 		motivation_change += Balance.number("encouragement.right_motivation")
+		if not steady:
+			_lesson("worked", 3.0, "When %s was %s, %s encouragement was what they needed, not just their usual." % [words.name, words.state, words.best])
 	elif hit.grade == "miss":
 		outcome = {"grade": "miss", "score": 0.0, "text": "You said nothing useful. They plod on alone.", "tone": "bad"}
+	elif hit.zone_id == usual:
+		var text: String = String(catalog.lines.encouragement_usual).format(words)
+		outcome = {"grade": "usual", "score": Beats.grade_score(hit.grade) * Balance.number("encouragement.usual_score"), "text": text, "tone": "warn"}
+		_lesson("change", 3.0, "Personality is %s's usual preference, not the whole answer. When %s is %s, try %s encouragement." % [words.name, words.name, words.state, words.best])
 	else:
-		outcome = {"grade": "wrong", "score": Balance.number("bar.score_wrong_choice"), "text": catalog.lines.approach_wrong[client.def.personality], "tone": "warn"}
+		var text: String = catalog.lines.approach_wrong[personality] if steady else String(situation.wrong).format(words)
+		outcome = {"grade": "wrong", "score": Balance.number("bar.score_wrong_choice"), "text": text, "tone": "warn"}
 		_change_rapport(Balance.number("encouragement.wrong_rapport"))
+		if steady:
+			_lesson("change", 2.0, "When %s is settled, use their usual %s encouragement (%s)." % [words.name, words.usual.to_lower(), catalog.personalities[personality].about])
+		else:
+			_lesson("change", 3.0, "When %s is %s, %s encouragement helps most." % [words.name, words.state, words.best])
 	_after_press(outcome.score)
 	return outcome
 
 
-## Effort management: continue, ease off or stop for each repeat.
+## Effort management: continue, ease off or stop for each repeat. Stop
+## ends the exercise there: the client walks it off and recovers. On red that
+## is the right call, and the repeats they skip do not count against the
+## score; stopping a client who had more in them leaves those repeats unscored
+## at zero.
 func _resolve_effort(position: float) -> Dictionary:
 	var hit: Dictionary = Beats.hit(beat.zones, position)
 	var colour: String = beat.signal
@@ -358,11 +407,43 @@ func _resolve_effort(position: float) -> Dictionary:
 	if colour == "red" and hit.zone_id == "continue":
 		extra_fatigue += Balance.number("peaks.effort_red_continue_fatigue")
 		text += " That added fatigue."
-	var drain: float = {"continue": 1.3, "ease": 0.7, "stop": 0.2}.get(hit.zone_id, 1.0)
+		_lesson("change", 6.0, "On a red signal in %s, stop the repeats. Continuing on red only added fatigue." % record().def.name.to_lower())
 	# Judging each repeat is pacing judgment too: it teaches Pacing Knowledge.
 	record().knowledge_hits += score
+	if hit.zone_id == "stop":
+		text += _stop_exercise(score, best == "stop")
+		return {"grade": hit.grade if score > 0.0 else "wrong", "score": score, "text": text, "tone": tone}
+	var drain: float = {"continue": 1.3, "ease": 0.7}.get(hit.zone_id, 1.0)
 	_after_press(score, drain)
 	return {"grade": hit.grade if score > 0.0 else "wrong", "score": score, "text": text, "tone": tone}
+
+
+## Ends the current exercise after a Stop: the client recovers instead of
+## running the remaining repeats, and the session moves to the next exercise
+## with no closing peak. Returns the line that says so.
+func _stop_exercise(score: float, right: bool) -> String:
+	var rec: Dictionary = record()
+	rec.scores.append(score)
+	rec.done += 1
+	last_score = score
+	var left: int = rec.presses - rec.done
+	if left > 0:
+		rec.stopped_after = rec.done
+	if not right:
+		for i in range(left):
+			rec.scores.append(0.0)
+	var before: float = energy
+	energy = minf(energy + Balance.number("effort.stop_recovery"), 100.0)
+	var name: String = client.def.short
+	if right:
+		_lesson("worked", 5.0, "Stopping %s on red protected %s and still counted as a full-credit call." % [rec.def.name.to_lower(), name])
+	else:
+		_lesson("change", 4.0, "Stop ends the repeats for good. Save it for a red signal; %s had more to give." % name)
+	_next_exercise()
+	var skipped: String = "" if left <= 0 else (" The last repeat is off." if left == 1 else " The last %d repeats are off." % left)
+	if not right and left > 0:
+		skipped += " They count as undone."
+	return "%s %s walks it off and recovers (+%d energy)." % [skipped, name, int(round(energy - before))]
 
 
 func _resolve_peak(position: float) -> Dictionary:
@@ -377,6 +458,7 @@ func _resolve_peak(position: float) -> Dictionary:
 	if hit.zone_id == "":
 		text = feedback.missed
 		tone = "bad"
+		_lesson("change", 2.0, "Make a call at every peak moment. Read the signal colour as the banner appears.")
 		motivation_change += Balance.number("peaks.missed_motivation")
 	elif (hit.zone_id == "push") == push_right:
 		rec.peak_bonus += Balance.number("peaks.correct_bonus")
@@ -384,12 +466,17 @@ func _resolve_peak(position: float) -> Dictionary:
 		text = {"green": feedback.green_push, "red": feedback.red_hold}.get(colour, "")
 		if colour == "amber":
 			text = String(feedback.amber_push_right if push_right else feedback.amber_hold_right).format(words)
+		if colour == "red":
+			_lesson("worked", 4.0, "Holding %s back at a red peak moment kept them safe." % client.def.short)
+		elif colour == "amber":
+			_lesson("worked", 2.5, "You followed the %s block's amber rule at the peak moment." % words.block)
 	else:
 		tone = "bad"
 		match colour:
 			"green":
 				rec.peak_bonus -= Balance.number("peaks.green_hold_penalty")
 				text = feedback.green_hold
+				_lesson("change", 3.0, "Green at a peak moment means push: %s was fresh and could take the extra work." % client.def.short)
 			"amber":
 				if hit.zone_id == "hold":
 					rec.peak_bonus -= Balance.number("peaks.amber_hold_penalty")
@@ -397,10 +484,12 @@ func _resolve_peak(position: float) -> Dictionary:
 				else:
 					extra_fatigue += Balance.number("peaks.amber_push_fatigue")
 					text = String(feedback.amber_push_wrong).format(words)
+				_lesson("change", 4.0, "Check the block rule at amber: in %s, %s." % [words.block, "push" if push_right else "hold back"])
 			"red":
 				extra_fatigue += Balance.number("peaks.red_push_fatigue")
 				_change_rapport(Balance.number("peaks.red_push_rapport"))
 				text = feedback.red_push
+				_lesson("change", 7.0, "Red means hold back, every time. Pushing %s on red piled on fatigue and risked injury." % client.def.short)
 				if Det.chance(rng, Balance.number("peaks.red_push_injury_chance")):
 					injured = true
 					text += " %s pulls up with a tweaked calf: a minor injury." % client.def.short
@@ -414,6 +503,17 @@ func _resolve_peak(position: float) -> Dictionary:
 	else:
 		beat = _normal_beat()
 	return {"grade": "right" if tone == "good" else "wrong", "score": 0.0, "text": text, "tone": tone}
+
+
+func _lesson(kind: String, priority: float, text: String) -> void:
+	lessons.append({"kind": kind, "priority": priority, "text": text})
+
+
+func _question_label(id: String) -> String:
+	for question in catalog.lines.questions:
+		if question.id == id:
+			return question.label
+	return id
 
 
 func _change_rapport(amount: float) -> void:

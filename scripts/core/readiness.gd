@@ -65,6 +65,26 @@ static func predicted_minutes(state: RefCounted, race_ready: float) -> float:
 	return goal * (Balance.number("event.time_at_full_readiness") + Balance.number("event.time_per_missing_readiness") * missing)
 
 
+## The finishing range if the race were run today, with today's fatigue:
+## {low, high, goal} in minutes and `verdict` ("on_track", "in_reach",
+## "not_yet" or "withdraw").
+static func projection(state: RefCounted) -> Dictionary:
+	var race_ready: float = race_readiness(state)
+	var predicted: float = predicted_minutes(state, race_ready)
+	var spread: float = variation(state)
+	var goal: float = float(state.def.target.minutes)
+	var low: float = predicted * (1.0 - spread)
+	var high: float = predicted * (1.0 + spread)
+	var verdict: String = "not_yet"
+	if race_ready < Balance.number("event.withdraw_below_readiness"):
+		verdict = "withdraw"
+	elif high <= goal:
+		verdict = "on_track"
+	elif low <= goal:
+		verdict = "in_reach"
+	return {"low": low, "high": high, "goal": goal, "verdict": verdict}
+
+
 ## How far race day can swing the time either way (a fraction): Pacing
 ## Knowledge narrows it from the low-knowledge to the high-knowledge spread.
 static func variation(state: RefCounted) -> float:

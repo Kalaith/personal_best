@@ -63,6 +63,10 @@ func tour() -> void:
 	await shot("12_week_summary")
 	await _auto_weeks(4)
 	await shot("13_mini_goal")
+	await _auto_weeks(11)
+	main.screens.current.continued.emit()
+	await seconds(1.2)
+	await shot("13b_race_week_planner")
 	await _auto_weeks(12)
 	await shot("14_race_week_summary")
 	main.screens.current.continued.emit()
@@ -109,7 +113,7 @@ func _best_zone(sim: RefCounted, beat: Dictionary) -> Dictionary:
 		"cue":
 			want = beat.fault.cue
 		"encouragement":
-			want = sim.catalog.personalities[sim.client.def.personality].approach
+			want = beat.best
 		"effort":
 			want = {"green": "continue", "amber": "continue" if sim.block().push_on_amber else "ease", "red": "stop"}[beat.signal]
 		"peak":
@@ -138,8 +142,9 @@ func _finish_sessions() -> void:
 ## that week's summary the way the game does.
 func _auto_weeks(last_week: int) -> void:
 	var game: RefCounted = main.game
-	main.screens.current.continued.emit()
-	await frames(5)
+	if main.screens.current.has_signal("continued"):
+		main.screens.current.continued.emit()
+		await frames(5)
 	while game.week <= last_week and game.phase == "planner":
 		for state in game.clients:
 			var block: String = game.block().id

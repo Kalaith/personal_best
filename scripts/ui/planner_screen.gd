@@ -75,6 +75,8 @@ func _client_card(state: RefCounted) -> PanelContainer:
 	var goal: String = String(game.catalog.targets[state.def.target.type].describe).format({"cutoff": Readiness.format_minutes(Balance.number("event.cutoff_minutes")), "time": Readiness.format_minutes(float(state.def.target.minutes))})
 	column.add_child(Style.ui.label("Goal: " + goal, 14, Style.MUTED))
 	column.add_child(Widgets.readiness_bar(Readiness.readiness(state), float(game.next_milestone().get("threshold", 90)), 160.0))
+	if game.week >= Balance.integer("event.projection_from_week"):
+		column.add_child(_projection(state))
 	var conditions: HBoxContainer = Style.ui.hbox(12)
 	column.add_child(conditions)
 	conditions.add_child(Widgets.condition("Fatigue", state.fatigue, Style.RED if state.fatigue >= 50.0 else Style.AMBER, "Carried into the next session: lower starting energy, a faster bar and less progress."))
@@ -91,6 +93,24 @@ func _client_card(state: RefCounted) -> PanelContainer:
 	if not history.is_empty():
 		column.add_child(Style.ui.wrapped("  ".join(history), 13))
 	return panel
+
+
+## The finishing range if the race were today, so race week holds no surprise.
+func _projection(state: RefCounted) -> Label:
+	var projection: Dictionary = Readiness.projection(state)
+	var verdicts: Dictionary = {
+		"on_track": ["on track for the goal", Style.GREEN],
+		"in_reach": ["the goal is in reach on a good day", Style.AMBER],
+		"not_yet": ["not yet on goal pace", Style.RED],
+		"withdraw": ["not ready to finish yet", Style.RED],
+	}
+	var verdict: Array = verdicts[projection.verdict]
+	var range_text: String = "%s to %s" % [Readiness.format_minutes(projection.low), Readiness.format_minutes(projection.high)]
+	var tired: String = " Fatigue %d is costing time; a taper wins it back." % int(round(state.fatigue)) if state.fatigue >= 30.0 else ""
+	var line: Label = Style.ui.wrapped("Race today: %s, %s.%s" % [range_text, verdict[0], tired], 14, verdict[1])
+	line.tooltip_text = "Today's readiness and fatigue turned into a finishing time, with race-day luck either way. Better Pacing Knowledge narrows the range; a taper removes the fatigue penalty."
+	line.mouse_filter = Control.MOUSE_FILTER_PASS
+	return line
 
 
 func _booking(state: RefCounted) -> VBoxContainer:

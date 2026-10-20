@@ -24,8 +24,8 @@ const MINIGAME_NAMES: Dictionary = {
 const MINIGAME_HOWTO: Dictionary = {
 	"pace": "The bar is an effort scale from Easy to Hard. Stop the marker in the green zone: the effort they should hold right now.",
 	"technique": "Watch the rep. When the form fault flashes up on the bar, stop the marker inside it, then choose the cue that fixes it.",
-	"encouragement": "Each zone is a way of encouraging them. Stop on the one that suits their personality.",
-	"effort": "Every repeat is a call: Stop, Ease off or Continue. Read their signal colour, face and body language first.",
+	"encouragement": "Each zone is a way of encouraging them. Their personality says what usually works, but read the cue line first: someone exhausted, frustrated or flying may need something else.",
+	"effort": "Every repeat is a call: Stop, Ease off or Continue. Read their signal colour, face and body language first. Stop ends the repeats there and lets them recover: right on red, wasted on green.",
 }
 
 var game: RefCounted

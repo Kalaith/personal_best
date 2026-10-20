@@ -7,6 +7,7 @@ const Balance = preload("res://addons/hatchery/core/balance.gd")
 const Readiness = preload("res://scripts/core/readiness.gd")
 const RoutineRules = preload("res://scripts/core/routine_rules.gd")
 const Catalog = preload("res://scripts/core/catalog.gd")
+const Takeaways = preload("res://scripts/core/session_takeaways.gd")
 
 
 ## 0..1: the average of every exercise minigame's score.
@@ -69,6 +70,8 @@ static func apply(sim: RefCounted) -> Dictionary:
 			"gains": applied,
 			"unsuitable": assessed.unsuitable,
 			"notes": notes,
+			"presses": int(rec.presses),
+			"stopped_after": int(rec.stopped_after),
 		})
 	var fatigue_before: float = client.fatigue
 	client.fatigue = clampf(client.fatigue + added_fatigue, 0.0, 100.0)
@@ -91,6 +94,7 @@ static func apply(sim: RefCounted) -> Dictionary:
 		"performance": perf,
 		"fatigue_modifier": fatigue_mod,
 		"check_in": sim.check_in,
+		"takeaways": Takeaways.pick(sim, exercises, fatigue_mod),
 		"exercises": exercises,
 		"changes": changes,
 		"readiness_before": readiness_before,

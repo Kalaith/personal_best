@@ -6,6 +6,7 @@ extends RefCounted
 const JsonIO = preload("res://addons/hatchery/core/json_io.gd")
 const DataRules = preload("res://addons/hatchery/core/data_rules.gd")
 const Balance = preload("res://addons/hatchery/core/balance.gd")
+const Encouragement = preload("res://scripts/core/encouragement.gd")
 
 const ATTRIBUTES: Array[String] = ["endurance", "pace", "strength", "recovery", "knowledge"]
 const MINIGAMES: Array[String] = ["pace", "technique", "encouragement", "effort"]
@@ -20,6 +21,7 @@ const BALANCE_PATHS: Array[String] = [
 	"event.cutoff_minutes", "event.time_at_full_readiness", "event.time_per_missing_readiness",
 	"event.variation_low_knowledge", "event.variation_high_knowledge", "event.withdraw_below_readiness",
 	"event.field_size", "event.field_mean_minutes", "event.field_spread_minutes", "event.moments",
+	"event.projection_from_week",
 	"bar.pass_seconds", "bar.max_speed_up", "bar.zone_width", "bar.perfect_width", "bar.rapport_widen",
 	"bar.fatigue_narrow", "bar.mood_adjust", "bar.treadmill_perfect_bonus", "bar.score_perfect",
 	"bar.score_good", "bar.score_miss", "bar.score_wrong_choice", "bar.min_presses", "bar.max_presses",
@@ -33,6 +35,8 @@ const BALANCE_PATHS: Array[String] = [
 	"check_in.correct_energy_share", "check_in.correct_mood", "check_in.correct_rapport",
 	"check_in.wrong_mood", "check_in.miss_mood", "check_in.start_mood",
 	"encouragement.right_rapport", "encouragement.wrong_rapport", "encouragement.right_motivation",
+	"encouragement.usual_score", "encouragement.situation_weights", "encouragement.situation_trigger",
+	"encouragement.situation_hint_share", "effort.stop_recovery",
 	"progress.global_gain", "progress.load_value", "progress.load_fatigue", "progress.load_intensity",
 	"progress.fatigue_modifier_floor", "progress.suitability_min", "progress.suitability_max",
 	"progress.unsuitable_factor", "progress.weakness_ratio", "progress.weakness_bonus",
@@ -219,6 +223,8 @@ func _load_shop(data: Dictionary) -> void:
 			if entry.effects.has("capacity"):
 				check.integer(entry, "clients")
 				check.integer(entry, "extra_slots")
+		if entry.has("future"):
+			check.boolean(entry, "future")
 		shop_items[entry.id] = entry
 		shop_order.append(entry.id)
 	var owned: Array = starting_equipment.map(func(item: Dictionary) -> String: return item.id)
@@ -291,10 +297,11 @@ func _load_lines(data: Dictionary) -> void:
 	if data.is_empty():
 		return
 	var rules := DataRules.new(errors, "lines.json")
-	for key in ["questions", "check_in_states", "approaches"]:
+	for key in ["questions", "check_in_states", "approaches", "encouragement_situations"]:
 		rules.list(data, key, false)
-	for key in ["approach_right", "approach_wrong", "signals", "peak_feedback", "moments", "guidance", "advice", "blocks"]:
+	for key in ["approach_right", "approach_wrong", "signals", "peak_feedback", "moments", "guidance", "advice", "blocks", "minigame_advice"]:
 		rules.object(data, key)
+	rules.text(data, "encouragement_usual")
 	if not errors.is_empty():
 		return
 	var questions: Array = data.questions.map(func(q: Dictionary) -> String: return q.id)
@@ -309,7 +316,30 @@ func _load_lines(data: Dictionary) -> void:
 	for block in BLOCKS:
 		if not data.blocks.has(block):
 			rules.fail("blocks needs " + block)
+	_check_situations(rules, data)
 	for colour in ["green", "amber", "red"]:
 		if not data.signals.has(colour):
 			rules.fail("signals needs " + colour)
 	lines = data
+
+
+## Every encouragement situation once, each naming approaches that exist.
+func _check_situations(rules: DataRules, data: Dictionary) -> void:
+	var approaches: Array = data.approaches.map(func(a: Dictionary) -> String: return a.id)
+	var seen: Array = rules.unique_ids(data.encouragement_situations)
+	if seen != Array(Encouragement.SITUATIONS):
+		rules.fail("encouragement_situations must be " + ", ".join(Encouragement.SITUATIONS))
+	var weights: Dictionary = Balance.dict("encouragement.situation_weights") if Balance.has("encouragement.situation_weights") else {}
+	for situation in data.encouragement_situations:
+		var check := DataRules.new(errors, "encouragement_situations[%s]" % situation.get("id", "?"))
+		check.text(situation, "state")
+		if not weights.has(situation.get("id")):
+			check.fail("needs a weight in balance encouragement.situation_weights")
+		if situation.get("id") == "steady":
+			continue
+		check.one_of(situation, "approach", approaches)
+		for key in ["cue", "right", "wrong"]:
+			check.text(situation, key)
+		for personality in (situation.get("overrides", {}) as Dictionary):
+			if not personalities.has(personality) or not approaches.has(situation.overrides[personality]):
+				check.fail("override %s names an unknown personality or approach" % personality)

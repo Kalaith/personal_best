@@ -1,6 +1,12 @@
 extends RefCounted
 ## Buying equipment and memberships. Purchases are paid at once and arrive
-## at the start of next week, so the player has to plan ahead.
+## at the start of next week, so the player has to plan ahead. Items marked
+## `future` are listed so the player can see where the gym is heading, but
+## cannot be bought in this season.
+
+
+static func is_future(game: RefCounted, id: String) -> bool:
+	return bool(game.catalog.shop_items[id].get("future", false))
 
 
 ## "" when `id` can be bought now, otherwise the reason it can't.
@@ -8,6 +14,8 @@ static func problem(game: RefCounted, id: String) -> String:
 	if not game.catalog.shop_items.has(id):
 		return "Not for sale."
 	var item: Dictionary = game.catalog.shop_items[id]
+	if is_future(game, id):
+		return "Later seasons."
 	if game.owns(id):
 		return "Already in the gym."
 	if game.pending.has(id):

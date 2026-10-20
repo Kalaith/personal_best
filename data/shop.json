@@ -14,7 +14,7 @@
 		{"id": "treadmill", "name": "Treadmill", "cost": 400, "reputation": 1, "slots": 1, "effects": ["weatherproof_runs", "precise_pace"], "about": "Runs go ahead at full value in bad weather, and the pace display widens the Perfect band in pace coaching."},
 		{"id": "barbell_rack", "name": "Barbell and rack", "cost": 600, "reputation": 2, "slots": 1, "effects": [], "about": "Unlocks the barbell back squat for heavier Strength work."},
 		{"id": "track_membership", "name": "Running track membership", "cost": 800, "reputation": 2, "slots": 0, "effects": ["full_intervals"], "about": "Intervals on a measured track count at full value instead of 80% on the road loop."},
-		{"id": "shed_extension", "name": "Shed extension", "cost": 1500, "reputation": 2, "slots": 0, "effects": ["capacity"], "clients": 2, "extra_slots": 3, "about": "+2 client capacity and +3 equipment slots."},
-		{"id": "small_studio", "name": "Small studio", "cost": 5000, "reputation": 4, "slots": 0, "effects": ["capacity"], "clients": 3, "extra_slots": 6, "about": "+3 client capacity and +6 equipment slots."}
+		{"id": "shed_extension", "name": "Shed extension", "cost": 700, "reputation": 2, "slots": 0, "effects": ["capacity"], "clients": 2, "extra_slots": 3, "about": "+3 equipment slots now, so foam rollers, the rowing machine, the treadmill and the barbell can all fit. Also +2 client capacity for later seasons (this season has only Jordan and Peg)."},
+		{"id": "small_studio", "name": "Small studio", "cost": 5000, "reputation": 4, "slots": 0, "effects": ["capacity"], "clients": 3, "extra_slots": 6, "future": true, "about": "+3 client capacity and +6 equipment slots. A goal for later seasons: it cannot be reached before this season's race."}
 	]
 }

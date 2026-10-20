@@ -80,7 +80,7 @@
 			"experience": "none",
 			"personality": "anxious",
 			"target": {"type": "finish", "minutes": 360},
-			"requirements": {"endurance": 60, "pace": 25, "strength": 45, "recovery": 45, "knowledge": 45},
+			"requirements": {"endurance": 55, "pace": 25, "strength": 40, "recovery": 40, "knowledge": 40},
 			"attributes": {"endurance": 10, "pace": 6, "strength": 15, "recovery": 16, "knowledge": 10},
 			"motivation": 65,
 			"rapport": 10,
