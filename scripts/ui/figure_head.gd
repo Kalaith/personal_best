@@ -2,13 +2,24 @@ extends RefCounted
 ## A figure's head in profile: skull, jaw and nose as one outlined shape,
 ## an ear, hair cut to `hair_style` ("short" or "bob"), and a face that
 ## reads the client's state: relaxed brows and a smile, a set jaw, or a
-## knotted grimace with flushed cheeks and sweat. The body may crane the
+## knotted grimace with flushed cheeks and sweat, plus the faces of body
+## language (a beam, heavy lids, a yawn, a tense mouth, a wince). The body may crane the
 ## neck up (`neck`, radians) or puff the cheeks with a held breath (`cheeks`, 0..1).
 const Shapes = preload("res://scripts/ui/shapes.gd")
 
 const INK := Color("2a1d17")
 const LIP := Color("6a2e24")
 const SWEAT := Color("bfe3ff")
+
+## Brows for each face, back end then front end.
+const BROWS: Dictionary = {
+	"smile": [Vector2(3.0, -3.2), Vector2(6.6, -3.4)], "beam": [Vector2(3.0, -3.7), Vector2(6.6, -3.9)],
+	"focus": [Vector2(3.0, -2.8), Vector2(6.6, -2.2)], "grimace": [Vector2(3.0, -3.6), Vector2(6.6, -2.0)],
+	"wince": [Vector2(3.0, -3.6), Vector2(6.6, -1.8)], "tense": [Vector2(3.0, -2.5), Vector2(6.6, -1.6)],
+	"tired": [Vector2(3.0, -2.6), Vector2(6.6, -2.9)], "pant": [Vector2(3.0, -2.6), Vector2(6.6, -2.9)],
+	"closed": [Vector2(3.0, -2.6), Vector2(6.6, -2.9)], "yawn": [Vector2(3.0, -3.9), Vector2(6.6, -4.2)],
+	"flat": [Vector2(3.0, -3.4), Vector2(6.6, -3.0)],
+}
 
 
 ## Where the head sits for a body skeleton from figure.gd.
@@ -94,30 +105,47 @@ static func _hair(ci: CanvasItem, at: Callable, b: Dictionary, hair: Color, bob:
 	ci.draw_polyline(shine, hair.lightened(0.22), maxf(1.0, float(b.u) * 1.1), true)
 
 
+## The face reads the client's state: the eye (open, heavy-lidded, shut or
+## squeezed), the brow and the mouth.
 static func _face(ci: CanvasItem, at: Callable, u: float, expression: String, skin: Color) -> void:
 	var line: float = maxf(1.0, u * 0.75)
 	var eye: Vector2 = at.call(4.8, -0.4)
-	if expression == "grimace":
+	if expression in ["grimace", "wince"]:
 		ci.draw_line(at.call(3.8, -0.4), at.call(5.8, -0.1), INK, line * 1.2, true)
-		ci.draw_circle(at.call(3.0, 2.4), 2.0 * u, Color(0.9, 0.3, 0.3, 0.35))
+	elif expression in ["closed", "yawn"]:
+		ci.draw_polyline(PackedVector2Array([at.call(3.8, -0.6), at.call(4.9, 0.0), at.call(6.0, -0.5)]), INK, line, true)
 	elif u >= 1.3:
 		Shapes.ellipse(ci, eye, 1.5 * u, 1.2 * u, Color("f6f1ea"))
-		ci.draw_circle(at.call(5.4, -0.3), 0.85 * u, INK)
+		ci.draw_circle(at.call(5.4, -0.3 + (0.3 if expression in ["tired", "pant"] else 0.0)), 0.85 * u, INK)
+		if expression in ["tired", "pant"]:
+			# A heavy lid over the top half of the eye.
+			Shapes.fill(ci, PackedVector2Array([at.call(3.2, -0.3), at.call(3.6, -1.8), at.call(6.4, -1.8), at.call(6.5, -0.2)]), skin.darkened(0.08))
+			ci.draw_line(at.call(3.3, -0.2), at.call(6.4, -0.1), INK, line, true)
 	else:
 		ci.draw_circle(at.call(5.1, -0.4), maxf(1.0, 0.95 * u), INK)
-	var brow: Array = {"smile": [Vector2(3.0, -3.2), Vector2(6.6, -3.4)], "focus": [Vector2(3.0, -2.8), Vector2(6.6, -2.2)],
-		"grimace": [Vector2(3.0, -3.6), Vector2(6.6, -2.0)]}.get(expression, [Vector2(3.0, -3.2), Vector2(6.6, -3.4)])
+	if expression in ["grimace", "wince"]:
+		ci.draw_circle(at.call(3.0, 2.4), 2.0 * u, Color(0.9, 0.3, 0.3, 0.35))
+	var brow: Array = BROWS.get(expression, BROWS.smile)
 	ci.draw_line(at.call(brow[0].x, brow[0].y), at.call(brow[1].x, brow[1].y), INK, line * 1.1, true)
 	var mouth: Vector2 = at.call(5.6, 4.6)
 	match expression:
 		"smile":
 			ci.draw_polyline(PackedVector2Array([at.call(4.0, 4.0), at.call(5.4, 4.9), at.call(6.8, 4.2)]), LIP, line, true)
-		"focus":
-			ci.draw_line(at.call(4.2, 4.6), at.call(6.8, 4.5), LIP, line, true)
+		"beam":
+			Shapes.fill(ci, PackedVector2Array([at.call(3.8, 3.9), at.call(7.0, 3.7), at.call(6.4, 5.4), at.call(5.0, 5.8)]), Color("5a2420"))
+			ci.draw_line(at.call(4.1, 4.1), at.call(6.8, 3.9), Color("efe6dc"), maxf(1.0, u * 0.6))
+		"focus", "flat", "tense":
+			ci.draw_line(at.call(4.2, 4.6), at.call(6.2 if expression == "tense" else 6.8, 4.5), LIP, line * (1.3 if expression == "tense" else 1.0), true)
+		"tired", "closed":
+			ci.draw_polyline(PackedVector2Array([at.call(4.2, 4.9), at.call(5.4, 4.5), at.call(6.6, 4.9)]), LIP, line, true)
+		"yawn":
+			Shapes.ellipse(ci, at.call(5.6, 5.0), 1.6 * u, 2.4 * u, Color("5a2420"))
+		"pant":
+			Shapes.ellipse(ci, at.call(5.7, 4.8), 1.2 * u, 1.3 * u, Color("5a2420"))
 		_:
 			Shapes.ellipse(ci, mouth, 1.7 * u, 1.1 * u, Color("5a2420"))
 			ci.draw_line(at.call(4.4, 4.4), at.call(6.8, 4.4), Color("efe6dc"), maxf(1.0, u * 0.5))
-	if expression != "smile":
+	if expression in ["focus", "grimace", "pant"]:
 		var drop: Vector2 = at.call(-2.6, -8.0)
 		ci.draw_circle(drop, 1.3 * u, SWEAT)
 		Shapes.fill(ci, PackedVector2Array([drop + Vector2(-1.2, 0) * u, drop + Vector2(0, -2.4) * u, drop + Vector2(1.2, 0) * u]), SWEAT)

@@ -8,6 +8,7 @@ const Shapes = preload("res://scripts/ui/shapes.gd")
 const Poses = preload("res://scripts/ui/figure_poses.gd")
 const Props = preload("res://scripts/ui/figure_props.gd")
 const Head = preload("res://scripts/ui/figure_head.gd")
+const Moods = preload("res://scripts/ui/figure_moods.gd")
 
 const SHOE := Color("f1efe9")
 const SOLE := Color("5a4c44")
@@ -23,8 +24,10 @@ const FAR_TINT: float = 0.2
 ## `feet` is the ground point under the figure; `size` is roughly its height
 ## in pixels. `expression` is "smile", "focus" or "grimace". `fault` (a
 ## technique fault's `show` id) bends the pose by `fault_amount` (0..1).
+## `mood` (see figure_moods.gd) lays body language over the pose and may
+## change the face.
 static func draw(ci: CanvasItem, feet: Vector2, look: Dictionary, pose: String, phase: float, size: float, facing: float = 1.0, expression: String = "smile",
-		fault: String = "", fault_amount: float = 0.0) -> void:
+		fault: String = "", fault_amount: float = 0.0, mood: Dictionary = {}) -> void:
 	var u: float = size / 100.0 * float(look.get("height", 1.0))
 	var build: float = float(look.get("build", 1.0))
 	var colours: Dictionary = {
@@ -36,6 +39,9 @@ static func draw(ci: CanvasItem, feet: Vector2, look: Dictionary, pose: String, 
 	}
 	var spin: float = phase * TAU
 	var p: Dictionary = Poses.pose(pose, spin, u, fault, fault_amount)
+	if not mood.is_empty():
+		Moods.apply(p, mood, u)
+		expression = String(p.get("face", expression))
 	var body: Dictionary = _skeleton(p, feet, u, facing)
 	body.merge({"u": u, "build": build, "facing": facing, "feet": feet, "spin": spin, "colours": colours, "rim": maxf(1.0, u * 0.75),
 		"neck": float(p.get("neck", 0.0)), "cheeks": float(p.get("cheeks", 0.0))})

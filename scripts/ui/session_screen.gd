@@ -9,12 +9,18 @@ const GameSettings = preload("res://scripts/ui/game_settings.gd")
 const GymView = preload("res://scripts/ui/gym_view.gd")
 const Portrait = preload("res://scripts/ui/portrait.gd")
 const SlideBar = preload("res://scripts/ui/slide_bar.gd")
+const BodyLanguage = preload("res://scripts/ui/body_language.gd")
 
 signal finished
 
 ## Seconds an outcome stays up before the next beat (peaks read longer).
 const RESULT_SECONDS: float = 1.1
 const PEAK_RESULT_SECONDS: float = 2.2
+## How much larger people are drawn at the check-in, where their body
+## language is the thing to read; and where the client walks in from and to.
+const CHECK_IN_SCALE: float = 1.3
+const DOOR_X: float = 0.93
+const CHECK_IN_X: float = 0.56
 const POSES: Dictionary = {
 	"goblet_squat": "squat", "barbell_squat": "back_squat", "lunges": "lunge", "step_ups": "step",
 	"skipping": "skip", "core_circuit": "plank", "foam_rolling": "roll", "rowing": "row",
@@ -50,6 +56,8 @@ var _peak_banner: Label
 var _shown_index: int = -2
 var _wait: float = 0.0
 var _bands: Array = []
+## How the client carries themselves today (body_language.gd stance ids).
+var _stance: Array = []
 
 
 func setup(owner: RefCounted, session: RefCounted) -> void:
@@ -195,7 +203,10 @@ func _begin() -> void:
 	if state != "intro":
 		return
 	_card.hide()
-	_run_beat(sim.prompt())
+	var beat: Dictionary = sim.prompt()
+	if beat.kind == "check_in":
+		_view.walk(DOOR_X, CHECK_IN_X, BodyLanguage.walk_seconds(_stance))
+	_run_beat(beat)
 
 
 func _run_beat(beat: Dictionary) -> void:
@@ -217,6 +228,8 @@ func _on_stopped(position: float, visible: bool) -> void:
 		return
 	var kind: String = sim.prompt().kind
 	var outcome: Dictionary = sim.press(position, visible)
+	if kind == "check_in":
+		_view.react(BodyLanguage.reaction(String(sim.check_in.question), _stance))
 	_bar.flash(Style.tone_color(outcome.tone))
 	_add_feedback(outcome)
 	_refresh_client()
@@ -248,9 +261,18 @@ func _refresh_client() -> void:
 func _set_activity() -> void:
 	var rec: Dictionary = sim.record()
 	if rec.is_empty():
-		_view.client_x = 0.5
+		# The check-in: the client waits at the door, larger than usual, and
+		# shows how they are before a word is said.
+		_stance = BodyLanguage.stance(String(sim.condition.id), sim.client.fatigue, sim.client.injured_weeks > 0)
+		_view.figure_scale = CHECK_IN_SCALE
+		_view.client_x = DOOR_X
+		_view.facing = -1.0
+		_view.set_body_language(_stance, BodyLanguage.idle_gestures(_stance))
 		_view.set_activity("shed", "stand", 0.0)
 		return
+	_view.figure_scale = 1.0
+	_view.facing = 1.0
+	_view.set_body_language([], [])
 	var def: Dictionary = rec.def
 	if def.kind == "run":
 		var indoors: bool = game.bad_weather() and game.has_effect("weatherproof_runs")

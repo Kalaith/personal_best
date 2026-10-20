@@ -6,8 +6,13 @@ const Figure = preload("res://scripts/ui/figure.gd")
 const Room = preload("res://scripts/ui/gym_room.gd")
 const Kit = preload("res://scripts/ui/gym_kit.gd")
 const Outdoors = preload("res://scripts/ui/gym_outdoors.gd")
+const Moods = preload("res://scripts/ui/figure_moods.gd")
 
 signal arrived
+
+## Seconds before a waiting client's first gesture, then the gaps between them.
+const FIRST_GESTURE: float = 1.0
+const GESTURE_GAPS: Array = [3.2, 4.4]
 
 const TRAINER_LOOK: Dictionary = {"skin": "c98e66", "hair": "5a3a26", "hair_style": "short", "top": "e2803a", "shorts": "3a3f4a", "build": 1.0, "height": 1.0}
 
@@ -32,12 +37,24 @@ var phase: float = 0.0
 ## how far into it they are, easing in and out.
 var fault: String = ""
 var fault_amount: float = 0.0
+## Body language while the client stands or walks (stance ids from
+## figure_moods.gd) and the gestures they slip into while waiting.
+var stance: Array = []
+var idle_gestures: Array = []
+## Scales both people; the room and its kit stay the same size.
+var figure_scale: float = 1.0
 var _fault_target: String = ""
 var _scroll: float = 0.0
 var _walk_from: float = 0.0
 var _walk_to: float = 0.0
 var _walk_time: float = 0.0
 var _walk_left: float = 0.0
+var _mood_time: float = 0.0
+var _gesture: String = ""
+var _gesture_length: float = 1.0
+var _gesture_left: float = 0.0
+var _next_gesture: float = 0.0
+var _gesture_turn: int = 0
 
 
 func _ready() -> void:
@@ -49,7 +66,37 @@ func set_activity(where: String, new_pose: String, cycles_per_second: float) -> 
 	place = where
 	pose = new_pose
 	tempo = cycles_per_second
+	if new_pose != "stand":
+		_gesture = ""
 	queue_redraw()
+
+
+## Sets how the client carries themselves (empty for none); they slip into
+## `gestures` in turn while standing.
+func set_body_language(states: Array, gestures: Array) -> void:
+	stance = states
+	idle_gestures = gestures
+	_gesture = ""
+	_gesture_turn = 0
+	_next_gesture = FIRST_GESTURE
+
+
+## Plays a gesture now (an answer to a question), cutting short any walk.
+func react(gesture: String) -> void:
+	if _walk_left > 0.0:
+		_walk_left = 0.0
+		client_x = _walk_to
+		pose = "stand"
+		tempo = 0.0
+		arrived.emit()
+	_play(gesture)
+	_next_gesture = _gesture_length + GESTURE_GAPS[1]
+
+
+func _play(gesture: String) -> void:
+	_gesture = gesture
+	_gesture_length = Moods.length(gesture)
+	_gesture_left = _gesture_length
 
 
 ## Eases the client into a form fault, or back to clean form with "".
@@ -79,6 +126,17 @@ func _process(delta: float) -> void:
 		fault_amount = move_toward(fault_amount, 1.0, delta * 4.0)
 	if pose == "run":
 		_scroll += delta * 140.0 * tempo
+	_mood_time += delta
+	if not _gesture.is_empty():
+		_gesture_left -= delta
+		if _gesture_left <= 0.0:
+			_gesture = ""
+	elif pose == "stand" and not idle_gestures.is_empty():
+		_next_gesture -= delta
+		if _next_gesture <= 0.0:
+			_play(idle_gestures[_gesture_turn % idle_gestures.size()])
+			_next_gesture = _gesture_length + GESTURE_GAPS[_gesture_turn % GESTURE_GAPS.size()]
+			_gesture_turn += 1
 	if _walk_left > 0.0:
 		_walk_left = maxf(_walk_left - delta, 0.0)
 		client_x = lerpf(_walk_from, _walk_to, 1.0 - _walk_left / _walk_time)
@@ -91,8 +149,8 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var ground: float = size.y * 0.84
-	var figure_size: float = size.y * 0.52
-	var k: float = figure_size / 100.0
+	var k: float = size.y * 0.52 / 100.0
+	var figure_size: float = size.y * 0.52 * figure_scale
 	var treadmill_run: bool = place == "shed" and pose == "run"
 	match place:
 		"road":
@@ -117,9 +175,20 @@ func _draw() -> void:
 			var mill_k: float = k * 1.05
 			Kit.treadmill(self, feet + Vector2(-34.0 * mill_k, 0.0), mill_k, _scroll * 0.4)
 			feet.y -= 12.5 * mill_k
-		Figure.draw(self, feet, look, pose, phase, figure_size, facing, expression, fault, fault_amount)
+		Figure.draw(self, feet, look, pose, phase, figure_size, facing, expression, fault, fault_amount, _mood())
 	if rain and place != "shed":
 		Outdoors.rain(self, size, phase, _scroll)
+
+
+## The client's body language for this frame, or {} for none.
+func _mood() -> Dictionary:
+	if stance.is_empty() and _gesture.is_empty():
+		return {}
+	if pose == "walk":
+		return {"stance": stance, "walking": true, "spin": phase * TAU}
+	if pose != "stand":
+		return {}
+	return {"stance": stance, "gesture": _gesture, "progress": 1.0 - _gesture_left / _gesture_length, "time": _mood_time}
 
 
 ## The piece of kit the client is using, which the back wall leaves out.

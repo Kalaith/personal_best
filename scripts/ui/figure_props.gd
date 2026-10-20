@@ -53,6 +53,8 @@ static func front(ci: CanvasItem, prop: String, b: Dictionary) -> void:
 				_rope(ci, b)
 		"clipboard":
 			_clipboard(ci, b)
+		"phone":
+			_phone(ci, b)
 		"rower":
 			var hand: Vector2 = b.near_hand
 			var fan: Vector2 = Vector2(b.feet) + Vector2(36.0 * b.facing, -17.0) * u
@@ -192,3 +194,17 @@ static func _clipboard(ci: CanvasItem, b: Dictionary) -> void:
 		var y: float = -2.5 + float(i) * 2.2
 		ci.draw_line(centre + Vector2(-2.6, y).rotated(tilt) * u, centre + Vector2(2.6 - float(i % 2) * 1.4, y).rotated(tilt) * u, Color("9a8f80"), maxf(1.0, u * 0.4))
 	ci.draw_line(centre + Vector2(-1.8, -6.6).rotated(tilt) * u, centre + Vector2(1.8, -6.6).rotated(tilt) * u, STEEL, maxf(1.5, u * 1.4))
+
+
+## A phone held in both hands at the chest, screen lit toward the face.
+static func _phone(ci: CanvasItem, b: Dictionary) -> void:
+	var u: float = b.u
+	var centre: Vector2 = (Vector2(b.near_hand) + Vector2(b.far_hand)) * 0.5 - Vector2(0.0, 1.5 * u)
+	var tilt: float = -0.5 * b.facing
+	var body := PackedVector2Array()
+	var screen := PackedVector2Array()
+	for v in [Vector2(-1.6, -3.0), Vector2(1.6, -3.0), Vector2(1.6, 3.0), Vector2(-1.6, 3.0)]:
+		body.append(centre + Vector2(v).rotated(tilt) * u)
+		screen.append(centre + (Vector2(v) * 0.75).rotated(tilt) * u)
+	Shapes.poly(ci, body, Color("22252a"), maxf(1.0, u * 0.5))
+	Shapes.fill(ci, screen, Color("9fd3f0"))

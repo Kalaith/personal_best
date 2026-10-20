@@ -203,6 +203,15 @@ rates: review after playtesting.
 - The race is shown as a short running scene, not a playable race, per the
   GDD.
 - The educational disclaimer is on the title screen.
+- At the check-in the client walks in from the door and their body says how
+  they are before any text does: bouncing on their toes (fresh), head
+  hanging and nodding off (poor sleep), favouring a leg and rubbing it (sore
+  legs), arms folded and checking a phone (stressed). Carried fatigue of 50
+  or more slumps them over the check-in state and replaces looking fresh; an
+  injury makes them protect a leg. Asking a question plays a short answer
+  with the body (a fist pump, a yawn, a calf rub, a head rub); a question
+  that misses gets only a shrug, so it gives nothing away. People are drawn
+  30 % larger at the check-in; the room is not.
 
 ## Not yet checked
 
