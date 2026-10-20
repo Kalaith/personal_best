@@ -29,3 +29,9 @@ coach={
 
 [input_devices]
 pointing/emulate_mouse_from_touch=true
+
+[promotion]
+
+; Personal Best never changes the mouse mode, so promo capture cannot grab the pointer.
+background_capture_safe=true
+setup_script="res://scripts/promo_setup.gd"
