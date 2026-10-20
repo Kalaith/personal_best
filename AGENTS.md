@@ -22,7 +22,8 @@ Personal Best is a 2D coaching game: the player is a personal trainer working ou
 
 - `tools/season_sim.gd` plays whole seasons headlessly with scripted coaching (good, average and careless) and prints readiness at each milestone and the event results. Run it after a balance change:
   `& "C:\Program Files\Godot\Godot_v4.2.2-stable_mono_win64_console.exe" --headless --path . --script res://tools/season_sim.gd`
-- Parse/import check: `--headless --editor --quit`.
+- `tools/parse_all.gd` compiles every script (`--headless --script res://tools/parse_all.gd`), and the parse/import check is `--headless --editor --quit`.
+- `tools/capture.gd` drives the real game through every screen and saves PNGs (needs a window, not `--headless`): `--path . --script res://tools/capture.gd -- <output dir>`.
 - Verify anything visual by running the game (`Run.ps1`).
 
 ## Commit voice
