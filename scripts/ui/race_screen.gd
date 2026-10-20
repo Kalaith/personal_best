@@ -40,6 +40,7 @@ func _ready() -> void:
 	view.custom_minimum_size = Vector2(0, 170)
 	view.look = client.def.look
 	view.show_trainer = false
+	view.race_day = true
 	view.expression = "smile" if result.achieved else "grimace"
 	view.set_activity("road", "run" if not result.withdrew else "walk", 1.2 if not result.withdrew else 0.6)
 	column.add_child(view)

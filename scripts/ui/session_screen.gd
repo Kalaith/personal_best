@@ -15,7 +15,7 @@ signal finished
 const RESULT_SECONDS: float = 1.1
 const PEAK_RESULT_SECONDS: float = 2.2
 const POSES: Dictionary = {
-	"goblet_squat": "squat", "barbell_squat": "squat", "lunges": "lunge", "step_ups": "step",
+	"goblet_squat": "squat", "barbell_squat": "back_squat", "lunges": "lunge", "step_ups": "step",
 	"skipping": "skip", "core_circuit": "plank", "foam_rolling": "roll", "rowing": "row",
 }
 const MINIGAME_NAMES: Dictionary = {

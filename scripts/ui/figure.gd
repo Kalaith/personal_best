@@ -1,11 +1,23 @@
 extends RefCounted
 ## Draws a person side-on from a `look` ({skin, hair, hair_style, top,
 ## shorts, build, height}) in one of the training poses, animated by
-## `phase` (0..1 repeating). Limbs are angled from straight down; positive
-## angles point the way the figure faces.
+## `phase` (0..1 repeating). Bodies are built from tapered, outlined limbs
+## and a shaped torso whose depth follows `build`; poses come from
+## figure_poses.gd and the kit they use from figure_props.gd.
+const Shapes = preload("res://scripts/ui/shapes.gd")
+const Poses = preload("res://scripts/ui/figure_poses.gd")
+const Props = preload("res://scripts/ui/figure_props.gd")
+const Head = preload("res://scripts/ui/figure_head.gd")
 
 const SHOE := Color("f1efe9")
 const SOLE := Color("5a4c44")
+const THIGH: float = 22.0
+const SHIN: float = 22.0
+const UPPER_ARM: float = 16.0
+const FOREARM: float = 15.0
+const SPINE: float = 40.0
+## How much the far side of the body is shaded.
+const FAR_TINT: float = 0.2
 
 
 ## `feet` is the ground point under the figure; `size` is roughly its height
@@ -18,245 +30,212 @@ static func draw(ci: CanvasItem, feet: Vector2, look: Dictionary, pose: String, 
 		"hair": Color(look.get("hair", "3a2a20")),
 		"top": Color(look.get("top", "3a7fbf")),
 		"shorts": Color(look.get("shorts", "2a2a33")),
+		"shoe": SHOE,
 	}
 	var spin: float = phase * TAU
-	var p: Dictionary = _pose(pose, spin, u)
+	var p: Dictionary = Poses.pose(pose, spin, u)
+	var body: Dictionary = _skeleton(p, feet, u, facing)
+	body.merge({"u": u, "build": build, "facing": facing, "feet": feet, "spin": spin, "colours": colours, "rim": maxf(1.0, u * 0.75)})
+	var prop: String = String(p.get("prop", ""))
+	var lift: float = feet.y - maxf(body.near_ankle.y, body.far_ankle.y)
+	var spread: float = 34.0 if p.has("horizontal") else 15.0
+	Shapes.shadow(ci, Vector2(body.hip.x + 4.0 * u * facing * (1.0 if p.has("horizontal") else 0.0), feet.y - 1.0), spread * u * clampf(1.0 - lift / (60.0 * u), 0.5, 1.0), 3.2 * u)
+	Props.behind(ci, prop, body)
+	var far: Dictionary = _tinted(colours, FAR_TINT)
+	_leg(ci, body, body.far_hip, body.far_knee, body.far_ankle, far)
+	_arm(ci, body, body.far_shoulder, body.far_elbow, body.far_hand, far)
+	Props.far(ci, prop, body)
+	_torso(ci, body, colours)
+	_leg(ci, body, body.near_hip, body.near_knee, body.near_ankle, colours)
+	Head.draw(ci, body, look, colours, expression)
+	_arm(ci, body, body.near_shoulder, body.near_elbow, body.near_hand, colours)
+	Props.front(ci, prop, body)
+
+
+## Joint positions for the pose: hips, shoulders, knees, ankles, elbows and
+## hands, plus the torso's frame (`up` along the spine, `front` out of the chest).
+static func _skeleton(p: Dictionary, feet: Vector2, u: float, facing: float) -> Dictionary:
 	var hip: Vector2 = feet + Vector2(float(p.hip_x) * facing, -46.0 * u + float(p.hip_y))
 	var lean: float = float(p.lean)
-	var shoulder: Vector2 = hip + _dir(lean + PI, facing) * 40.0 * u
+	var axis: Vector2 = Vector2(sin(lean) * facing, -cos(lean)) * SPINE * u
 	if p.has("horizontal"):
-		shoulder = hip + Vector2(40.0 * u * facing, -4.0 * u)
-	var limb: float = (5.5 + 1.8 * (build - 1.0)) * u
-	# Far side first so the near limbs overlap it.
-	var far_tint: float = 0.18
-	var hip_gap: Vector2 = Vector2(2.5 * u * facing, 0.0) if not p.has("horizontal") else Vector2(0.0, 1.5 * u)
-	_leg(ci, hip - hip_gap, p.far_thigh, p.far_shin, u, limb, colours.shorts.darkened(far_tint), colours.skin.darkened(far_tint), facing)
-	_arm(ci, shoulder, p.far_upper, p.far_fore, u, limb * 0.8, colours.top.darkened(far_tint), colours.skin.darkened(far_tint), facing)
-	_torso(ci, hip, shoulder, u, build, colours)
-	_leg(ci, hip + hip_gap, p.near_thigh, p.near_shin, u, limb, colours.shorts, colours.skin, facing)
-	var head: Vector2 = shoulder + (shoulder - hip).normalized() * 13.0 * u
-	_head(ci, head, u, look, colours, facing, expression)
-	var hand: Vector2 = _arm(ci, shoulder, p.near_upper, p.near_fore, u, limb * 0.8, colours.top, colours.skin, facing)
-	if p.has("prop"):
-		_prop(ci, String(p.prop), hand, u, spin, feet, facing)
+		axis = Vector2(SPINE * u * facing, -(4.0 + float(p.get("tilt", 0.0))) * u)
+	var shoulder: Vector2 = hip + axis
+	var up: Vector2 = axis.normalized()
+	var front: Vector2 = -up.orthogonal() * facing
+	var b: Dictionary = {"hip": hip, "shoulder": shoulder, "up": up, "front": front, "horizontal": p.has("horizontal"), "lean": lean}
+	var hip_gap: Vector2 = Vector2(2.0 * u * facing, 0.0) if not p.has("horizontal") else Vector2(0.0, 1.5 * u)
+	var shoulder_gap: Vector2 = Vector2(-1.5 * u * facing, 0.0) if not p.has("horizontal") else Vector2(0.0, 1.0 * u)
+	b.near_hip = hip + hip_gap * 0.5
+	b.far_hip = hip - hip_gap * 0.5
+	b.near_shoulder = shoulder + shoulder_gap * 0.5 - up * 2.0 * u
+	b.far_shoulder = shoulder - shoulder_gap * 0.5 - up * 2.0 * u
+	for side in ["near", "far"]:
+		var root: Vector2 = b[side + "_hip"]
+		if p.has(side + "_ankle"):
+			var target: Vector2 = feet + Vector2(p[side + "_ankle"].x * facing, p[side + "_ankle"].y) * u
+			b[side + "_knee"] = Shapes.joint(root, target, THIGH * u, SHIN * u, -facing)
+			b[side + "_ankle"] = b[side + "_knee"] + (target - b[side + "_knee"]).normalized() * SHIN * u
+		else:
+			b[side + "_knee"] = root + _dir(float(p[side + "_thigh"]), facing) * THIGH * u
+			b[side + "_ankle"] = b[side + "_knee"] + _dir(float(p[side + "_shin"]), facing) * SHIN * u
+		var socket: Vector2 = b[side + "_shoulder"]
+		var reach: Variant = null
+		if p.has(side + "_hand"):
+			reach = socket + Vector2(p[side + "_hand"].x * facing, p[side + "_hand"].y) * u
+		elif p.has(side + "_grip"):
+			reach = shoulder + (front * p[side + "_grip"].x - up * p[side + "_grip"].y) * u
+		if reach != null:
+			# Elbows fold whichever way keeps them lower, as arms naturally hang.
+			var bent: Vector2 = Shapes.joint(socket, reach, UPPER_ARM * u, FOREARM * u, facing)
+			var other: Vector2 = Shapes.joint(socket, reach, UPPER_ARM * u, FOREARM * u, -facing)
+			b[side + "_elbow"] = bent if bent.y >= other.y else other
+			b[side + "_hand"] = b[side + "_elbow"] + (Vector2(reach) - b[side + "_elbow"]).normalized() * FOREARM * u
+		else:
+			b[side + "_elbow"] = socket + _dir(float(p[side + "_upper"]), facing) * UPPER_ARM * u
+			b[side + "_hand"] = b[side + "_elbow"] + _dir(float(p[side + "_fore"]), facing) * FOREARM * u
+	return b
 
 
 static func _dir(angle: float, facing: float) -> Vector2:
 	return Vector2(sin(angle) * facing, cos(angle))
 
 
-## Joint angles and offsets for each pose at `spin` (radians).
-static func _pose(pose: String, spin: float, u: float) -> Dictionary:
-	var s: float = sin(spin)
-	var c: float = cos(spin)
-	var p: Dictionary = {"hip_x": 0.0, "hip_y": 0.0, "lean": 0.0, "near_thigh": 0.1, "near_shin": 0.04, "far_thigh": -0.1, "far_shin": -0.04,
-		"near_upper": 0.15, "near_fore": 0.25, "far_upper": -0.1, "far_fore": 0.1}
-	match pose:
-		"walk":
-			p.hip_y = -absf(s) * 1.5 * u
-			p.near_thigh = 0.35 * s
-			p.far_thigh = -0.35 * s
-			p.near_shin = p.near_thigh - maxf(0.0, -s) * 0.5
-			p.far_shin = p.far_thigh - maxf(0.0, s) * 0.5
-			p.near_upper = -0.3 * s
-			p.far_upper = 0.3 * s
-			p.near_fore = p.near_upper + 0.3
-			p.far_fore = p.far_upper + 0.3
-		"run":
-			p.hip_y = -absf(s) * 4.0 * u
-			p.lean = 0.16
-			p.near_thigh = 0.75 * s + 0.1
-			p.far_thigh = -0.75 * s + 0.1
-			p.near_shin = p.near_thigh - 0.6 - 0.6 * maxf(0.0, -s)
-			p.far_shin = p.far_thigh - 0.6 - 0.6 * maxf(0.0, s)
-			p.near_upper = -0.7 * s
-			p.far_upper = 0.7 * s
-			p.near_fore = p.near_upper + 1.5
-			p.far_fore = p.far_upper + 1.5
-		"squat":
-			var d: float = (1.0 - c) * 0.5
-			p.hip_y = d * 22.0 * u
-			p.hip_x = -d * 14.0 * u
-			p.lean = d * 0.8
-			p.near_thigh = d * 1.35
-			p.far_thigh = d * 1.35
-			p.near_shin = -d * 0.45
-			p.far_shin = -d * 0.45
-			p.near_upper = 1.2
-			p.near_fore = 2.6
-			p.far_upper = 1.2
-			p.far_fore = 2.6
-			p.prop = "dumbbell"
-		"lunge":
-			var d: float = (1.0 - c) * 0.5
-			p.hip_y = d * 16.0 * u
-			p.near_thigh = 0.35 + d * 0.9
-			p.near_shin = 0.1 - d * 0.2
-			p.far_thigh = -0.3 - d * 0.2
-			p.far_shin = -0.35 - d * 1.0
-			p.near_upper = 0.0
-			p.near_fore = 0.0
-			p.far_upper = 0.0
-			p.far_fore = 0.0
-			p.prop = "dumbbell"
-		"step":
-			var d: float = (1.0 - c) * 0.5
-			p.hip_y = -d * 18.0 * u
-			p.hip_x = d * 6.0 * u
-			p.near_thigh = 0.9 - d * 0.9
-			p.near_shin = -0.1
-			p.far_thigh = -0.1 + d * 0.2
-			p.far_shin = -0.1 - (1.0 - d) * 0.5
-			p.near_upper = 0.05
-			p.near_fore = 0.05
-			p.prop = "box"
-		"skip":
-			p.hip_y = -absf(s) * 7.0 * u
-			p.near_thigh = 0.1
-			p.far_thigh = 0.05
-			p.near_shin = -0.15
-			p.far_shin = -0.2
-			p.near_upper = 0.5
-			p.near_fore = 1.3
-			p.far_upper = 0.5
-			p.far_fore = 1.3
-			p.prop = "rope"
-		"plank":
-			var breathe: float = s * 0.6 * u
-			p.horizontal = true
-			p.hip_y = 32.0 * u + breathe
-			p.near_thigh = -1.45
-			p.far_thigh = -1.45
-			p.near_shin = -1.5
-			p.far_shin = -1.5
-			p.near_upper = 0.1
-			p.near_fore = 1.55
-			p.far_upper = 0.1
-			p.far_fore = 1.55
-			p.prop = "mat"
-		"roll":
-			p.horizontal = true
-			p.hip_y = 32.0 * u
-			p.hip_x = s * 6.0 * u
-			p.near_thigh = -1.5
-			p.far_thigh = -1.55
-			p.near_shin = -1.6
-			p.far_shin = -1.6
-			p.near_upper = 0.2
-			p.near_fore = 0.2
-			p.far_upper = 0.15
-			p.far_fore = 0.15
-			p.prop = "roller"
-		"row":
-			var d: float = (1.0 + c) * 0.5
-			p.hip_y = 28.0 * u
-			p.hip_x = -d * 14.0 * u
-			p.lean = -0.25 + d * 0.5
-			p.near_thigh = 1.0 + d * 0.5
-			p.far_thigh = 1.0 + d * 0.5
-			p.near_shin = -0.2 - d * 0.9 + 1.4
-			p.far_shin = -0.2 - d * 0.9 + 1.4
-			p.near_upper = 1.6 - (1.0 - d) * 0.9
-			p.near_fore = 1.6 + (1.0 - d) * 0.6
-			p.far_upper = p.near_upper
-			p.far_fore = p.near_fore
-			p.prop = "rower"
-		"wave":
-			p.near_upper = 2.6 + s * 0.25
-			p.near_fore = 3.0 + s * 0.4
-	return p
+static func _tinted(colours: Dictionary, amount: float) -> Dictionary:
+	var result: Dictionary = {}
+	for key in colours:
+		result[key] = Color(colours[key]).darkened(amount)
+	return result
 
 
-static func _segment(ci: CanvasItem, a: Vector2, b: Vector2, width: float, colour: Color) -> void:
-	ci.draw_line(a, b, colour, width)
-	ci.draw_circle(a, width * 0.5, colour)
-	ci.draw_circle(b, width * 0.5, colour)
+## A leg: thigh and calf in skin, the shorts' leg over the top of the thigh,
+## and a running shoe that tips with the shin.
+static func _leg(ci: CanvasItem, b: Dictionary, hip: Vector2, knee: Vector2, ankle: Vector2, colours: Dictionary) -> void:
+	var u: float = b.u
+	var girth: float = 0.8 + 0.25 * float(b.build)
+	var skin: Color = colours.skin
+	var rim: float = b.rim
+	var shin_dir: Vector2 = (ankle - knee).normalized()
+	var back: Vector2 = shin_dir.orthogonal() * b.facing
+	if back.dot(Vector2(-b.facing, 0.0)) < 0.0 and not b.horizontal:
+		back = -back
+	Shapes.capsule(ci, hip, knee, 4.6 * u * girth + rim, 3.0 * u * girth + rim, Shapes.outline_of(skin))
+	Shapes.capsule(ci, knee, ankle, 2.9 * u * girth + rim, 1.7 * u + rim, Shapes.outline_of(skin))
+	Shapes.capsule(ci, knee.lerp(ankle, 0.12) + back * 0.9 * u, knee.lerp(ankle, 0.5) + back * 0.5 * u, 3.0 * u * girth + rim, 2.0 * u + rim, Shapes.outline_of(skin))
+	Shapes.capsule(ci, hip, knee, 4.6 * u * girth, 3.0 * u * girth, skin)
+	Shapes.capsule(ci, knee, ankle, 2.9 * u * girth, 1.7 * u, skin)
+	Shapes.capsule(ci, knee.lerp(ankle, 0.12) + back * 0.9 * u, knee.lerp(ankle, 0.5) + back * 0.5 * u, 3.0 * u * girth, 2.0 * u, skin)
+	ci.draw_line(knee.lerp(ankle, 0.15) - back * 1.4 * u, knee.lerp(ankle, 0.8) - back * 0.7 * u, skin.lightened(0.14), maxf(1.0, u * 0.9), true)
+	Shapes.limb(ci, hip, hip.lerp(knee, 0.42), 5.0 * u * girth, 3.9 * u * girth, colours.shorts, rim)
+	_shoe(ci, b, ankle, shin_dir, colours)
 
 
-static func _leg(ci: CanvasItem, hip: Vector2, thigh: float, shin: float, u: float, width: float, cloth: Color, skin: Color, facing: float) -> void:
-	var knee: Vector2 = hip + _dir(thigh, facing) * 22.0 * u
-	var ankle: Vector2 = knee + _dir(shin, facing) * 22.0 * u
-	_segment(ci, knee, ankle, width * 0.9, skin)
-	_segment(ci, hip, hip.lerp(knee, 0.75), width * 1.15, cloth)
-	_segment(ci, hip.lerp(knee, 0.7), knee, width * 0.95, skin)
-	var toe: Vector2 = ankle + Vector2(7.0 * u * facing, 0.0)
-	_segment(ci, ankle + Vector2(-2.0 * u * facing, 0.0), toe, width * 1.0, SHOE)
-	ci.draw_line(ankle + Vector2(-2.5 * u * facing, width * 0.45), toe + Vector2(0.5 * u * facing, width * 0.45), SOLE, maxf(1.5, u * 1.2))
+static func _shoe(ci: CanvasItem, b: Dictionary, ankle: Vector2, shin_dir: Vector2, colours: Dictionary) -> void:
+	var u: float = b.u
+	var facing: float = b.facing
+	var shin_angle: float = atan2(shin_dir.x * facing, shin_dir.y)
+	var tip: float = clampf(-shin_angle * 0.65, -0.45, 1.1)
+	var fwd: Vector2 = Vector2(cos(tip) * facing, sin(tip))
+	var down: Vector2 = Vector2(-fwd.y, fwd.x) * facing
+	var shape: Array = [Vector2(-0.6, -2.4), Vector2(2.6, -1.7), Vector2(6.2, -0.4), Vector2(8.2, 1.2), Vector2(7.6, 2.6),
+		Vector2(-2.8, 2.6), Vector2(-3.0, 0.2)]
+	var points := PackedVector2Array()
+	for v in shape:
+		points.append(ankle + (fwd * v.x + down * v.y) * u)
+	Shapes.poly(ci, Shapes.smooth(points, 1), colours.shoe, b.rim)
+	ci.draw_line(ankle + (fwd * -2.6 + down * 2.2) * u, ankle + (fwd * 7.6 + down * 2.2) * u, SOLE, maxf(1.0, u * 1.0), true)
+	ci.draw_line(ankle + (fwd * 0.2 + down * 0.9) * u, ankle + (fwd * 4.4 + down * 0.2) * u, colours.top, maxf(1.0, u * 0.8), true)
 
 
-static func _arm(ci: CanvasItem, shoulder: Vector2, upper: float, fore: float, u: float, width: float, cloth: Color, skin: Color, facing: float) -> Vector2:
-	var elbow: Vector2 = shoulder + _dir(upper, facing) * 16.0 * u
-	var hand: Vector2 = elbow + _dir(fore, facing) * 15.0 * u
-	_segment(ci, elbow, hand, width * 0.85, skin)
-	_segment(ci, shoulder, shoulder.lerp(elbow, 0.6), width * 1.05, cloth)
-	_segment(ci, shoulder.lerp(elbow, 0.55), elbow, width * 0.9, skin)
-	ci.draw_circle(hand, width * 0.6, skin)
-	return hand
+## An arm: a short sleeve over the shoulder, bare forearm and a hand.
+static func _arm(ci: CanvasItem, b: Dictionary, shoulder: Vector2, elbow: Vector2, hand: Vector2, colours: Dictionary) -> void:
+	var u: float = b.u
+	var girth: float = 0.82 + 0.2 * float(b.build)
+	var rim: float = b.rim
+	Shapes.limb(ci, shoulder, elbow, 3.0 * u * girth, 2.1 * u * girth, colours.skin, rim)
+	Shapes.limb(ci, elbow, hand, 2.1 * u * girth, 1.6 * u, colours.skin, rim)
+	Shapes.limb(ci, shoulder, shoulder.lerp(elbow, 0.45), 4.0 * u * girth, 3.3 * u * girth, colours.top, rim)
+	var along: Vector2 = (hand - elbow).normalized()
+	Shapes.ellipse(ci, hand + along * 1.0 * u, 2.5 * u + rim, 2.0 * u + rim, Shapes.outline_of(colours.skin), along.angle())
+	Shapes.ellipse(ci, hand + along * 1.0 * u, 2.5 * u, 2.0 * u, colours.skin, along.angle())
 
 
-static func _torso(ci: CanvasItem, hip: Vector2, shoulder: Vector2, u: float, build: float, colours: Dictionary) -> void:
-	var axis: Vector2 = (shoulder - hip)
-	var side: Vector2 = axis.normalized().orthogonal()
-	var waist: float = 7.5 * u * build
-	var chest: float = 8.5 * u * (0.6 + 0.4 * build)
-	var points := PackedVector2Array([
-		hip + side * waist, hip.lerp(shoulder, 0.5) + side * (waist * 1.08), shoulder + side * chest,
-		shoulder - side * chest, hip.lerp(shoulder, 0.5) - side * (waist * 1.08), hip - side * waist,
-	])
-	ci.draw_colored_polygon(points, colours.top)
-	_segment(ci, hip + side * waist * 0.95, hip - side * waist * 0.95, 7.0 * u, colours.shorts)
-	ci.draw_circle(shoulder, chest * 0.95, colours.top)
+## The torso in profile: back, chest and (with a bigger build) belly, a
+## shirt over the shorts' waistband, and the neck.
+static func _torso(ci: CanvasItem, b: Dictionary, colours: Dictionary) -> void:
+	var u: float = b.u
+	var build: float = float(b.build)
+	var depth: float = 0.9 + 0.2 * build
+	var belly: float = maxf(0.0, build - 1.0) * 7.0
+	var front_profile: Array = [[-0.14, 6.0], [0.12, 6.2 + belly * 0.5], [0.38, 5.8 + belly], [0.62, 6.8 + belly * 0.45], [0.8, 7.6], [0.97, 5.0]]
+	var back_profile: Array = [[0.99, 5.8], [0.84, 7.0], [0.6, 5.8], [0.36, 5.4], [0.1, 6.8], [-0.14, 6.4]]
+	var neck_base: Vector2 = b.shoulder - b.up * 1.0 * u + b.front * 0.6 * u
+	var neck_top: Vector2 = Head.centre(b) - b.up * 2.0 * u
+	Shapes.limb(ci, neck_base, neck_top, 2.8 * u, 2.5 * u, colours.skin.darkened(0.06), b.rim)
+	var shorts: PackedVector2Array = _outline(b, front_profile, back_profile, -0.14, 0.2, depth * 1.04)
+	Shapes.poly(ci, Shapes.smooth(shorts, 2), colours.shorts, b.rim)
+	var shirt: PackedVector2Array = Shapes.smooth(_outline(b, front_profile, back_profile, 0.12, 1.0, depth), 2)
+	Shapes.poly(ci, shirt, colours.top, b.rim)
+	var lit_front: bool = Vector2(b.front).dot(Shapes.LIGHT) > 0.0
+	var shade: PackedVector2Array = _edge_strip(b, back_profile if lit_front else front_profile, not lit_front, depth, 2.4 * u)
+	Shapes.fill(ci, shade, Color(colours.top.darkened(0.22), 0.85))
+	var hem_a: Vector2 = b.hip + b.up * 0.14 * SPINE * u
+	ci.draw_line(hem_a + b.front * 5.6 * depth * u, hem_a - b.front * 5.4 * depth * u, colours.top.darkened(0.3), maxf(1.0, u * 0.7), true)
+	var collar: Vector2 = b.shoulder + b.front * 3.2 * u - b.up * 0.2 * u
+	ci.draw_arc(collar, 2.2 * u, 0.0, TAU, 12, colours.top.darkened(0.3), maxf(1.0, u * 0.7), true)
 
 
-static func _head(ci: CanvasItem, centre: Vector2, u: float, look: Dictionary, colours: Dictionary, facing: float, expression: String) -> void:
-	var r: float = 9.0 * u
-	if look.get("hair_style", "short") == "bob":
-		ci.draw_circle(centre + Vector2(-2.5 * u * facing, 1.5 * u), r * 1.12, colours.hair)
-	ci.draw_circle(centre + Vector2(0.0, 3.0 * u), r * 0.42, colours.skin.darkened(0.08))
-	ci.draw_circle(centre, r, colours.skin)
-	ci.draw_arc(centre + Vector2(-0.5 * u * facing, -0.5 * u), r * 1.02, PI * 1.05, PI * 1.95, 18, colours.hair, r * 0.55)
-	if look.get("hair_style", "short") == "bob":
-		ci.draw_circle(centre + Vector2(-5.0 * u * facing, 0.0), r * 0.6, colours.hair)
-	var eye: Vector2 = centre + Vector2(4.2 * u * facing, -1.0 * u)
-	ci.draw_circle(eye, 1.1 * u, Color("2a1d17"))
-	var mouth: Vector2 = centre + Vector2(4.8 * u * facing, 3.8 * u)
-	match expression:
-		"smile":
-			ci.draw_arc(mouth + Vector2(0, -1.2 * u), 2.0 * u, 0.3, PI - 0.3, 8, Color("6a2e24"), maxf(1.2, u * 0.9))
-		"focus":
-			ci.draw_line(mouth + Vector2(-1.6 * u, 0), mouth + Vector2(1.6 * u, 0), Color("6a2e24"), maxf(1.2, u * 0.9))
-		"grimace":
-			ci.draw_circle(mouth, 1.6 * u, Color("5a2420"))
-			ci.draw_line(eye + Vector2(-1.6 * u, -2.2 * u), eye + Vector2(1.6 * u, -1.2 * u), Color("2a1d17"), maxf(1.0, u * 0.8))
-	if expression != "smile":
-		var drop: Vector2 = centre + Vector2(-3.0 * u * facing, -7.5 * u)
-		ci.draw_circle(drop, 1.3 * u, Color("bfe3ff"))
+## A closed outline of the torso between `from` and `to` (shares of the spine).
+static func _outline(b: Dictionary, front_profile: Array, back_profile: Array, from: float, to: float, depth: float) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for t in _stations(front_profile, from, to):
+		points.append(_at(b, t, _width(front_profile, t) * depth))
+	var back_stations: Array = _stations(back_profile, from, to)
+	back_stations.reverse()
+	for t in back_stations:
+		points.append(_at(b, t, -_width(back_profile, t) * depth))
+	return points
 
 
-static func _prop(ci: CanvasItem, prop: String, hand: Vector2, u: float, spin: float, feet: Vector2, facing: float) -> void:
-	match prop:
-		"dumbbell":
-			ci.draw_line(hand + Vector2(-5 * u, 0), hand + Vector2(5 * u, 0), Color("3b3b3b"), 2.0 * u)
-			ci.draw_rect(Rect2(hand + Vector2(-7 * u, -3 * u), Vector2(3 * u, 6 * u)), Color("2c2c2c"))
-			ci.draw_rect(Rect2(hand + Vector2(4 * u, -3 * u), Vector2(3 * u, 6 * u)), Color("2c2c2c"))
-		"rope":
-			var top: float = -95.0 * u if sin(spin) > 0.0 else 4.0 * u
-			var mid := Vector2(feet.x, feet.y + top)
-			var left := hand + Vector2(-14.0 * u * facing, 0)
-			var points := PackedVector2Array()
-			for i in range(13):
-				var t: float = float(i) / 12.0
-				var a: Vector2 = left.lerp(hand, t)
-				points.append(a.lerp(mid, sin(t * PI)))
-			ci.draw_polyline(points, Color("d24f4f"), maxf(1.5, u))
-		"box":
-			ci.draw_rect(Rect2(feet + Vector2(4.0 * u * facing - (0.0 if facing > 0 else 26.0 * u), -16.0 * u), Vector2(26.0 * u, 16.0 * u)), Color("8b5a3c"))
-		"mat":
-			ci.draw_rect(Rect2(feet + Vector2(-10.0 * u, -2.0 * u), Vector2(90.0 * u * facing, 3.0 * u)).abs(), Color("4a7a8c"))
-		"roller":
-			ci.draw_circle(feet + Vector2(-8.0 * u * facing, -6.0 * u), 6.0 * u, Color("3fa7a0"))
-			ci.draw_rect(Rect2(feet + Vector2(-10.0 * u, -2.0 * u), Vector2(90.0 * u * facing, 3.0 * u)).abs(), Color("4a7a8c"))
-		"rower":
-			ci.draw_rect(Rect2(feet + Vector2(-30.0 * u, -14.0 * u), Vector2(90.0 * u, 5.0 * u)), Color("3a3a40"))
-			ci.draw_circle(feet + Vector2(62.0 * u, -16.0 * u), 10.0 * u, Color("2b2b30"))
-			ci.draw_line(hand, feet + Vector2(60.0 * u, -18.0 * u), Color("9a9a9a"), maxf(1.0, u * 0.8))
+## The spine positions to sample between `from` and `to`, ascending.
+static func _stations(profile: Array, from: float, to: float) -> Array:
+	var result: Array = [from]
+	for entry in profile:
+		if float(entry[0]) > from + 0.01 and float(entry[0]) < to - 0.01:
+			result.append(float(entry[0]))
+	result.append(to)
+	result.sort()
+	return result
+
+
+## The profile's depth at spine position `t`, interpolated between knots.
+static func _width(profile: Array, t: float) -> float:
+	var sorted: Array = profile.duplicate()
+	sorted.sort_custom(func(a: Array, z: Array) -> bool: return float(a[0]) < float(z[0]))
+	if t <= float(sorted[0][0]):
+		return float(sorted[0][1])
+	for i in range(sorted.size() - 1):
+		var a: Array = sorted[i]
+		var z: Array = sorted[i + 1]
+		if t <= float(z[0]):
+			return lerpf(float(a[1]), float(z[1]), (t - float(a[0])) / (float(z[0]) - float(a[0])))
+	return float(sorted[-1][1])
+
+
+## The point `out` body units in front of the spine (behind when negative).
+static func _at(b: Dictionary, t: float, out: float) -> Vector2:
+	return b.hip + b.up * t * SPINE * b.u + b.front * out * b.u
+
+
+## A band of shade just inside one edge of the shirt.
+static func _edge_strip(b: Dictionary, profile: Array, front_side: bool, depth: float, width: float) -> PackedVector2Array:
+	var sign: float = 1.0 if front_side else -1.0
+	var outer := PackedVector2Array()
+	var inner := PackedVector2Array()
+	for t in _stations(profile, 0.16, 0.95):
+		var out: float = _width(profile, t) * depth
+		outer.append(_at(b, t, sign * out))
+		inner.append(_at(b, t, sign * (out - width / b.u)))
+	inner.reverse()
+	outer.append_array(inner)
+	return outer
