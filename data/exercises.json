@@ -109,9 +109,9 @@
 			"rules": [],
 			"why": "Strong legs and hips absorb thousands of footstrikes. Strength work lowers injury risk and holds form late in the race.",
 			"faults": [
-				{"fault": "Knees caving inward", "cue": "Knees out"},
-				{"fault": "Heels lifting off the floor", "cue": "Weight in the heels"},
-				{"fault": "Chest dropping forward", "cue": "Chest up"}
+				{"fault": "Knees caving inward", "cue": "Knees out", "show": "knees_cave"},
+				{"fault": "Heels lifting off the floor", "cue": "Weight in the heels", "show": "heels_lift"},
+				{"fault": "Chest dropping forward", "cue": "Chest up", "show": "chest_drop"}
 			]
 		},
 		{
@@ -132,9 +132,9 @@
 			"rules": [],
 			"why": "Single-leg strength mirrors running, where every stride lands on one leg. It builds balance as well as strength.",
 			"faults": [
-				{"fault": "Front knee drifting past the toes", "cue": "Longer stride"},
-				{"fault": "Torso leaning over the front leg", "cue": "Stand tall"},
-				{"fault": "Back knee slamming down", "cue": "Lower with control"}
+				{"fault": "Front knee drifting past the toes", "cue": "Longer stride", "show": "knee_past_toes"},
+				{"fault": "Torso leaning over the front leg", "cue": "Stand tall", "show": "torso_lean"},
+				{"fault": "Back knee slamming down", "cue": "Lower with control", "show": "knee_slam"}
 			]
 		},
 		{
@@ -155,9 +155,9 @@
 			"rules": [],
 			"why": "A gentle, joint-friendly way to build leg strength. A good first strength exercise for someone new to training.",
 			"faults": [
-				{"fault": "Pushing off the back foot", "cue": "Drive through the top foot"},
-				{"fault": "Knee wobbling side to side", "cue": "Knee over toes"},
-				{"fault": "Dropping down fast", "cue": "Step down slowly"}
+				{"fault": "Pushing off the back foot", "cue": "Drive through the top foot", "show": "back_foot_push"},
+				{"fault": "Knee wobbling side to side", "cue": "Knee over toes", "show": "knee_wobble"},
+				{"fault": "Dropping down fast", "cue": "Step down slowly", "show": "drop_fast"}
 			]
 		},
 		{
@@ -195,9 +195,9 @@
 			"rules": [],
 			"why": "Planks and bridges keep the trunk stable so the legs work efficiently when tired. Low fatigue; fits into any session.",
 			"faults": [
-				{"fault": "Hips sagging in the plank", "cue": "Squeeze the glutes"},
-				{"fault": "Holding their breath", "cue": "Breathe steadily"},
-				{"fault": "Neck craning up", "cue": "Eyes to the floor"}
+				{"fault": "Hips sagging in the plank", "cue": "Squeeze the glutes", "show": "hips_sag"},
+				{"fault": "Holding their breath", "cue": "Breathe steadily", "show": "breath_hold"},
+				{"fault": "Neck craning up", "cue": "Eyes to the floor", "show": "neck_crane"}
 			]
 		},
 		{
@@ -254,9 +254,9 @@
 			"rules": ["beginner_no_hard"],
 			"why": "Heavier loading builds strength faster than dumbbells once the movement is learned.",
 			"faults": [
-				{"fault": "Knees caving inward", "cue": "Knees out"},
-				{"fault": "Lower back rounding", "cue": "Brace and stay tall"},
-				{"fault": "Bar drifting forward", "cue": "Bar over mid-foot"}
+				{"fault": "Knees caving inward", "cue": "Knees out", "show": "knees_cave"},
+				{"fault": "Lower back rounding", "cue": "Brace and stay tall", "show": "back_round"},
+				{"fault": "Bar drifting forward", "cue": "Bar over mid-foot", "show": "bar_forward"}
 			]
 		}
 	]

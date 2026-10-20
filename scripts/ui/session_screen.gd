@@ -261,7 +261,19 @@ func _set_activity() -> void:
 	_view.set_activity("shed", POSES.get(def.id, "stand"), 0.5 if def.kind == "strength" else 0.8)
 
 
+## The client shows the form fault while it is up on the bar and until a
+## cue fixes it.
+func _update_fault() -> void:
+	var beat: Dictionary = sim.prompt()
+	var shown: Dictionary = {}
+	if beat.kind == "cue" or (beat.kind == "spot" and state == "running" and _bar.zones_visible()):
+		shown = beat.fault
+	_view.show_fault(String(shown.get("show", "")))
+
+
 func _process(delta: float) -> void:
+	if state != "done":
+		_update_fault()
 	if state == "result":
 		_wait -= delta
 		if _wait <= 0.0:

@@ -28,6 +28,11 @@ var show_desk: bool = false
 var client_x: float = 0.45
 var facing: float = 1.0
 var phase: float = 0.0
+## The form fault the client is showing (a technique fault's `show` id) and
+## how far into it they are, easing in and out.
+var fault: String = ""
+var fault_amount: float = 0.0
+var _fault_target: String = ""
 var _scroll: float = 0.0
 var _walk_from: float = 0.0
 var _walk_to: float = 0.0
@@ -47,6 +52,11 @@ func set_activity(where: String, new_pose: String, cycles_per_second: float) -> 
 	queue_redraw()
 
 
+## Eases the client into a form fault, or back to clean form with "".
+func show_fault(id: String) -> void:
+	_fault_target = id
+
+
 ## Walks the client from `from_x` to `to_x` (shares of the width), then emits `arrived`.
 func walk(from_x: float, to_x: float, seconds: float) -> void:
 	_walk_from = from_x
@@ -61,6 +71,12 @@ func walk(from_x: float, to_x: float, seconds: float) -> void:
 
 func _process(delta: float) -> void:
 	phase = fposmod(phase + delta * tempo, 1.0)
+	if fault != _fault_target:
+		fault_amount = move_toward(fault_amount, 0.0, delta * 4.0)
+		if fault_amount <= 0.0:
+			fault = _fault_target
+	elif fault != "":
+		fault_amount = move_toward(fault_amount, 1.0, delta * 4.0)
 	if pose == "run":
 		_scroll += delta * 140.0 * tempo
 	if _walk_left > 0.0:
@@ -102,7 +118,7 @@ func _draw() -> void:
 			var mill_k: float = k * 1.05
 			Kit.treadmill(self, feet + Vector2(-34.0 * mill_k, 0.0), mill_k, _scroll * 0.4)
 			feet.y -= 12.5 * mill_k
-		Figure.draw(self, feet, look, pose, phase, figure_size, facing, expression)
+		Figure.draw(self, feet, look, pose, phase, figure_size, facing, expression, fault, fault_amount)
 	if rain and place != "shed":
 		Outdoors.rain(self, size, phase, _scroll)
 

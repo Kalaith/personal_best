@@ -21,8 +21,10 @@ const FAR_TINT: float = 0.2
 
 
 ## `feet` is the ground point under the figure; `size` is roughly its height
-## in pixels. `expression` is "smile", "focus" or "grimace".
-static func draw(ci: CanvasItem, feet: Vector2, look: Dictionary, pose: String, phase: float, size: float, facing: float = 1.0, expression: String = "smile") -> void:
+## in pixels. `expression` is "smile", "focus" or "grimace". `fault` (a
+## technique fault's `show` id) bends the pose by `fault_amount` (0..1).
+static func draw(ci: CanvasItem, feet: Vector2, look: Dictionary, pose: String, phase: float, size: float, facing: float = 1.0, expression: String = "smile",
+		fault: String = "", fault_amount: float = 0.0) -> void:
 	var u: float = size / 100.0 * float(look.get("height", 1.0))
 	var build: float = float(look.get("build", 1.0))
 	var colours: Dictionary = {
@@ -33,20 +35,21 @@ static func draw(ci: CanvasItem, feet: Vector2, look: Dictionary, pose: String, 
 		"shoe": SHOE,
 	}
 	var spin: float = phase * TAU
-	var p: Dictionary = Poses.pose(pose, spin, u)
+	var p: Dictionary = Poses.pose(pose, spin, u, fault, fault_amount)
 	var body: Dictionary = _skeleton(p, feet, u, facing)
-	body.merge({"u": u, "build": build, "facing": facing, "feet": feet, "spin": spin, "colours": colours, "rim": maxf(1.0, u * 0.75)})
+	body.merge({"u": u, "build": build, "facing": facing, "feet": feet, "spin": spin, "colours": colours, "rim": maxf(1.0, u * 0.75),
+		"neck": float(p.get("neck", 0.0)), "cheeks": float(p.get("cheeks", 0.0))})
 	var prop: String = String(p.get("prop", ""))
 	var lift: float = feet.y - maxf(body.near_ankle.y, body.far_ankle.y)
 	var spread: float = 34.0 if p.has("horizontal") else 15.0
 	Shapes.shadow(ci, Vector2(body.hip.x + 4.0 * u * facing * (1.0 if p.has("horizontal") else 0.0), feet.y - 1.0), spread * u * clampf(1.0 - lift / (60.0 * u), 0.5, 1.0), 3.2 * u)
 	Props.behind(ci, prop, body)
 	var far: Dictionary = _tinted(colours, FAR_TINT)
-	_leg(ci, body, body.far_hip, body.far_knee, body.far_ankle, far)
+	_leg(ci, body, body.far_hip, body.far_knee, body.far_ankle, far, float(p.get("far_heel_lift", 0.0)))
 	_arm(ci, body, body.far_shoulder, body.far_elbow, body.far_hand, far)
 	Props.far(ci, prop, body)
 	_torso(ci, body, colours)
-	_leg(ci, body, body.near_hip, body.near_knee, body.near_ankle, colours)
+	_leg(ci, body, body.near_hip, body.near_knee, body.near_ankle, colours, float(p.get("near_heel_lift", 0.0)))
 	Head.draw(ci, body, look, colours, expression)
 	_arm(ci, body, body.near_shoulder, body.near_elbow, body.near_hand, colours)
 	Props.front(ci, prop, body)
@@ -79,6 +82,8 @@ static func _skeleton(p: Dictionary, feet: Vector2, u: float, facing: float) -> 
 		else:
 			b[side + "_knee"] = root + _dir(float(p[side + "_thigh"]), facing) * THIGH * u
 			b[side + "_ankle"] = b[side + "_knee"] + _dir(float(p[side + "_shin"]), facing) * SHIN * u
+		if p.has(side + "_knee_shift"):
+			b[side + "_knee"] += Vector2(p[side + "_knee_shift"].x * facing, p[side + "_knee_shift"].y) * u
 		var socket: Vector2 = b[side + "_shoulder"]
 		var reach: Variant = null
 		if p.has(side + "_hand"):
@@ -109,8 +114,8 @@ static func _tinted(colours: Dictionary, amount: float) -> Dictionary:
 
 
 ## A leg: thigh and calf in skin, the shorts' leg over the top of the thigh,
-## and a running shoe that tips with the shin.
-static func _leg(ci: CanvasItem, b: Dictionary, hip: Vector2, knee: Vector2, ankle: Vector2, colours: Dictionary) -> void:
+## and a running shoe that tips with the shin (`heel_lift` tips it further, toes down).
+static func _leg(ci: CanvasItem, b: Dictionary, hip: Vector2, knee: Vector2, ankle: Vector2, colours: Dictionary, heel_lift: float = 0.0) -> void:
 	var u: float = b.u
 	var girth: float = 0.8 + 0.25 * float(b.build)
 	var skin: Color = colours.skin
@@ -127,14 +132,14 @@ static func _leg(ci: CanvasItem, b: Dictionary, hip: Vector2, knee: Vector2, ank
 	Shapes.capsule(ci, knee.lerp(ankle, 0.12) + back * 0.9 * u, knee.lerp(ankle, 0.5) + back * 0.5 * u, 3.0 * u * girth, 2.0 * u, skin)
 	ci.draw_line(knee.lerp(ankle, 0.15) - back * 1.4 * u, knee.lerp(ankle, 0.8) - back * 0.7 * u, skin.lightened(0.14), maxf(1.0, u * 0.9), true)
 	Shapes.limb(ci, hip, hip.lerp(knee, 0.42), 5.0 * u * girth, 3.9 * u * girth, colours.shorts, rim)
-	_shoe(ci, b, ankle, shin_dir, colours)
+	_shoe(ci, b, ankle, shin_dir, colours, heel_lift)
 
 
-static func _shoe(ci: CanvasItem, b: Dictionary, ankle: Vector2, shin_dir: Vector2, colours: Dictionary) -> void:
+static func _shoe(ci: CanvasItem, b: Dictionary, ankle: Vector2, shin_dir: Vector2, colours: Dictionary, heel_lift: float) -> void:
 	var u: float = b.u
 	var facing: float = b.facing
 	var shin_angle: float = atan2(shin_dir.x * facing, shin_dir.y)
-	var tip: float = clampf(-shin_angle * 0.65, -0.45, 1.1)
+	var tip: float = clampf(-shin_angle * 0.65, -0.45, 1.1) + heel_lift
 	var fwd: Vector2 = Vector2(cos(tip) * facing, sin(tip))
 	var down: Vector2 = Vector2(-fwd.y, fwd.x) * facing
 	var shape: Array = [Vector2(-0.6, -2.4), Vector2(2.6, -1.7), Vector2(6.2, -0.4), Vector2(8.2, 1.2), Vector2(7.6, 2.6),

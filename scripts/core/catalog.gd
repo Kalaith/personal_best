@@ -191,6 +191,7 @@ func _load_exercises(data: Dictionary) -> void:
 			for fault in entry.faults:
 				check.text(fault, "fault")
 				check.text(fault, "cue")
+				check.text(fault, "show")
 		if entry.get("minigame") != "technique":
 			check.text(entry, "cue")
 		exercises[entry.id] = entry

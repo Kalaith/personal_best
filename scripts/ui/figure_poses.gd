@@ -12,9 +12,17 @@ extends RefCounted
 ##                            y down the spine from the shoulder)
 ## and the limb bends to reach them. Lying poses set `horizontal`, and
 ## `tilt` raises their shoulders a little further off the floor.
+##
+## A form `fault` (a technique fault's `show` id) bends the pose by
+## `amount` (0..1) so the client visibly does it: `near_knee_shift` and
+## `far_knee_shift` nudge the knees, `near_heel_lift` and `far_heel_lift`
+## tip the toes down,
+## `neck` cranes the head up and `cheeks` puffs them out.
 
 
-static func pose(name: String, spin: float, u: float) -> Dictionary:
+static func pose(name: String, spin: float, u: float, fault: String = "", amount: float = 0.0) -> Dictionary:
+	if amount > 0.0:
+		spin = _rushed(fault, spin, amount)
 	var s: float = sin(spin)
 	var c: float = cos(spin)
 	var p: Dictionary = {"hip_x": 0.0, "hip_y": 0.0, "lean": 0.02, "near_thigh": 0.06, "near_shin": 0.02, "far_thigh": -0.06, "far_shin": -0.02,
@@ -103,7 +111,70 @@ static func pose(name: String, spin: float, u: float) -> Dictionary:
 			p.near_grip = Vector2(9.0, 15.0)
 			p.far_grip = Vector2(8.0, 18.0)
 			p.prop = "clipboard"
+	if amount > 0.0:
+		_fault(p, fault, spin, u, amount)
 	return p
+
+
+## Faults about tempo replay the cycle with one half hurried: a lunge that
+## drops onto the back knee, a step-up that falls off the box.
+static func _rushed(fault: String, spin: float, amount: float) -> float:
+	var t: float = fposmod(spin, TAU) / PI
+	var bend: float = 1.0 / (1.0 + 2.5 * amount)
+	match fault:
+		"knee_slam":
+			if t < 1.0:
+				return pow(t, bend) * PI
+		"drop_fast":
+			if t >= 1.0:
+				return (1.0 + pow(t - 1.0, bend)) * PI
+	return spin
+
+
+static func _fault(p: Dictionary, fault: String, spin: float, u: float, a: float) -> void:
+	var d: float = (1.0 - cos(spin)) * 0.5
+	match fault:
+		"knees_cave":
+			p.near_knee_shift = Vector2(4.0 * d + sin(spin * 6.0) * 0.8 * d, 0.0) * a
+			p.far_knee_shift = Vector2(2.5 * d, 0.0) * a
+		"heels_lift":
+			p.near_ankle += Vector2(0.5, -3.5) * d * a
+			p.far_ankle += Vector2(0.5, -3.5) * d * a
+			p.near_heel_lift = 0.6 * d * a
+			p.far_heel_lift = 0.6 * d * a
+		"chest_drop":
+			p.lean += 0.5 * d * a
+		"back_round":
+			p.lean += 0.4 * d * a
+			p.hip_x -= 3.0 * d * a * u
+		"bar_forward":
+			p.near_grip += Vector2(5.0, 0.0) * d * a
+			p.far_grip += Vector2(5.0, 0.0) * d * a
+			p.lean += 0.15 * d * a
+		"knee_past_toes":
+			p.hip_x += 7.0 * d * a * u
+		"torso_lean":
+			p.lean += 0.55 * d * a
+		"knee_slam":
+			p.hip_y += 3.0 * d * a * u
+		"back_foot_push":
+			var e: float = smoothstep(0.0, 1.0, d)
+			p.hip_y -= sin(e * PI) * 5.0 * a * u
+			p.lean -= 0.1 * a
+			p.far_ankle += Vector2(-4.0, 0.0) * sin(e * PI) * a
+			p.far_heel_lift = 0.5 * sin(e * PI) * a
+		"knee_wobble":
+			p.near_knee_shift = Vector2(sin(spin * 7.0) * 2.8, 0.0) * a
+		"hips_sag":
+			p.hip_y += 6.0 * a * u
+			p.tilt = float(p.get("tilt", 0.0)) + 6.5 * a
+			p.near_ankle += Vector2(-1.5, 0.0) * a
+			p.far_ankle += Vector2(-1.5, 0.0) * a
+		"breath_hold":
+			p.hip_y -= sin(spin) * 0.6 * u * a
+			p.cheeks = a
+		"neck_crane":
+			p.neck = 0.95 * a
 
 
 ## A squat with the feet planted: hips sit back and down, the chest stays up.

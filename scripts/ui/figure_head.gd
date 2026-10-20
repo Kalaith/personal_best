@@ -2,7 +2,8 @@ extends RefCounted
 ## A figure's head in profile: skull, jaw and nose as one outlined shape,
 ## an ear, hair cut to `hair_style` ("short" or "bob"), and a face that
 ## reads the client's state: relaxed brows and a smile, a set jaw, or a
-## knotted grimace with flushed cheeks and sweat.
+## knotted grimace with flushed cheeks and sweat. The body may crane the
+## neck up (`neck`, radians) or puff the cheeks with a held breath (`cheeks`, 0..1).
 const Shapes = preload("res://scripts/ui/shapes.gd")
 
 const INK := Color("2a1d17")
@@ -14,7 +15,7 @@ const SWEAT := Color("bfe3ff")
 static func centre(b: Dictionary) -> Vector2:
 	var u: float = b.u
 	var lift: Vector2 = Vector2(0.0, -0.35) if b.horizontal else Vector2(0.0, -0.8)
-	var neck: Vector2 = (Vector2(b.up) + lift).normalized()
+	var neck: Vector2 = (Vector2(b.up) + lift).normalized().rotated(-float(b.get("neck", 0.0)) * 0.5 * float(b.facing))
 	return Vector2(b.shoulder) + neck * 12.0 * u + Vector2(b.front) * 1.2 * u
 
 
@@ -22,7 +23,7 @@ static func draw(ci: CanvasItem, b: Dictionary, look: Dictionary, colours: Dicti
 	var u: float = b.u
 	var facing: float = b.facing
 	var c: Vector2 = centre(b)
-	var nod: float = (0.45 if b.horizontal else float(b.lean) * 0.3) * facing
+	var nod: float = ((0.45 if b.horizontal else float(b.lean) * 0.3) - float(b.get("neck", 0.0))) * facing
 	var at := func(x: float, y: float) -> Vector2: return c + Vector2(x * facing, y).rotated(nod) * u
 	var skin: Color = colours.skin
 	var hair: Color = colours.hair
@@ -42,6 +43,8 @@ static func draw(ci: CanvasItem, b: Dictionary, look: Dictionary, colours: Dicti
 		Shapes.ellipse(ci, at.call(-1.2, 0.9), 1.8 * u, 2.4 * u, skin.darkened(0.08), nod)
 	_hair(ci, at, b, hair, bob)
 	_face(ci, at, u, expression, skin)
+	if float(b.get("cheeks", 0.0)) > 0.0:
+		_held_breath(ci, at, b, skin)
 
 
 ## Points on a circle of `radius` (body units) round the head centre, from
@@ -118,3 +121,14 @@ static func _face(ci: CanvasItem, at: Callable, u: float, expression: String, sk
 		var drop: Vector2 = at.call(-2.6, -8.0)
 		ci.draw_circle(drop, 1.3 * u, SWEAT)
 		Shapes.fill(ci, PackedVector2Array([drop + Vector2(-1.2, 0) * u, drop + Vector2(0, -2.4) * u, drop + Vector2(1.2, 0) * u]), SWEAT)
+
+
+## Puffed, reddening cheeks and pressed lips over the usual face.
+static func _held_breath(ci: CanvasItem, at: Callable, b: Dictionary, skin: Color) -> void:
+	var u: float = b.u
+	var puff: float = float(b.cheeks)
+	var cheek: Vector2 = at.call(4.4 + puff * 0.8, 3.4)
+	Shapes.ellipse(ci, cheek, (2.4 + puff * 1.4) * u + b.rim, (2.0 + puff * 1.0) * u + b.rim, Shapes.outline_of(skin))
+	Shapes.ellipse(ci, cheek, (2.4 + puff * 1.4) * u, (2.0 + puff * 1.0) * u, skin)
+	ci.draw_circle(cheek, 2.2 * u, Color(0.9, 0.25, 0.25, 0.45 * puff))
+	ci.draw_line(at.call(6.0, 5.0), at.call(7.4, 4.8), LIP, maxf(1.0, u * 0.9), true)
