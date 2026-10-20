@@ -1,0 +1,31 @@
+; Engine configuration file. Open in Godot 4.2.2 or compatible Godot 4.x.
+config_version=5
+
+[application]
+config/name="Personal Best"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.2", "GL Compatibility")
+config/description="A personal trainer in a backyard shed coaches two very different clients toward the same marathon."
+config/icon="res://assets/icon.svg"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=800
+window/size/window_width_override=1280
+window/size/window_height_override=800
+window/stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.16, 0.12, 0.1, 1)
+textures/default_filters/use_nearest_mipmap_filter=false
+
+[input]
+coach={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":32), Object(InputEventJoypadButton,"button_index":0)]
+}
+
+[input_devices]
+pointing/emulate_mouse_from_touch=true

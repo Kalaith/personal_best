@@ -1,0 +1,8 @@
+{
+  "slug": "personal_best",
+  "display_name": "Personal Best",
+  "description": "A Godot coaching game: train two very different clients from a backyard shed toward the same marathon.",
+  "godot_version": "4.2.2",
+  "itch_target": "kalaith/personal-best",
+  "itch_channels": { "html5": "html5", "windows": "windows" }
+}
