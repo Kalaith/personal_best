@@ -23,6 +23,11 @@ static func capsule(ci: CanvasItem, a: Vector2, b: Vector2, ra: float, rb: float
 static func limb(ci: CanvasItem, a: Vector2, b: Vector2, ra: float, rb: float, colour: Color, rim: float) -> void:
 	capsule(ci, a, b, ra + rim, rb + rim, outline_of(colour))
 	capsule(ci, a, b, ra, rb, colour)
+	highlight(ci, a, b, ra, rb, colour)
+
+
+## A soft highlight down the lit side of a limb from `a` to `b`.
+static func highlight(ci: CanvasItem, a: Vector2, b: Vector2, ra: float, rb: float, colour: Color) -> void:
 	var along: Vector2 = b - a
 	if along.length() < 0.01:
 		return
@@ -31,6 +36,73 @@ static func limb(ci: CanvasItem, a: Vector2, b: Vector2, ra: float, rb: float, c
 		n = -n
 	var lit: Color = Color(colour.lightened(0.2), 0.45)
 	ci.draw_line(a.lerp(b, 0.2) + n * ra * 0.5, a.lerp(b, 0.8) + n * rb * 0.5, lit, maxf(1.0, minf(ra, rb) * 0.35), true)
+
+
+## The outline of a capsule as a polygon, so it can be merged with others.
+static func capsule_points(a: Vector2, b: Vector2, ra: float, rb: float, steps: int = 8) -> PackedVector2Array:
+	var along: Vector2 = b - a
+	if along.length() < 0.01:
+		return ellipse_points(a, maxf(ra, rb), maxf(ra, rb), 0.0, steps * 2)
+	var n: Vector2 = along.normalized().orthogonal()
+	var points := PackedVector2Array()
+	for i in range(steps + 1):
+		points.append(b + n.rotated(PI * float(i) / float(steps)) * rb)
+	for i in range(steps + 1):
+		points.append(a - n.rotated(PI * float(i) / float(steps)) * ra)
+	return points
+
+
+## One outline around overlapping parts (a thigh, calf and knee; an upper
+## arm, forearm and hand), with no seams where they meet.
+static func union(parts: Array) -> PackedVector2Array:
+	var result: PackedVector2Array = parts[0]
+	for i in range(1, parts.size()):
+		var merged: Array = Geometry2D.merge_polygons(result, parts[i])
+		if not merged.is_empty():
+			result = _largest(merged)
+	return result
+
+
+static func _largest(polygons: Array) -> PackedVector2Array:
+	var best: PackedVector2Array = polygons[0]
+	for polygon in polygons:
+		if _area(polygon) > _area(best):
+			best = polygon
+	return best
+
+
+static func _area(points: PackedVector2Array) -> float:
+	var total: float = 0.0
+	for i in range(points.size()):
+		total += points[i].cross(points[(i + 1) % points.size()])
+	return absf(total) * 0.5
+
+
+## Merges `parts` into one shape and draws it with a single outline. Where
+## the shape lies over `under` (a same-coloured shape already drawn, such as
+## the shorts on the hips) the outline is left off, so the two read as one
+## piece. Returns the merged shape.
+static func silhouette(ci: CanvasItem, parts: Array, colour: Color, rim: float, under: PackedVector2Array = PackedVector2Array()) -> PackedVector2Array:
+	var shape: PackedVector2Array = union(parts)
+	if rim > 0.0:
+		var grown: Array = Geometry2D.offset_polygon(shape, rim, Geometry2D.JOIN_ROUND)
+		if not grown.is_empty():
+			for piece in _outside(grown[0], under):
+				fill(ci, piece, outline_of(colour))
+	fill(ci, shape, colour)
+	return shape
+
+
+## `outer` with `under` cut away; the whole of `outer` when the cut would
+## leave a hole, which a plain fill cannot draw.
+static func _outside(outer: PackedVector2Array, under: PackedVector2Array) -> Array:
+	if under.size() < 3:
+		return [outer]
+	var pieces: Array = Geometry2D.clip_polygons(outer, under)
+	for piece in pieces:
+		if Geometry2D.is_polygon_clockwise(piece) != Geometry2D.is_polygon_clockwise(outer):
+			return [outer]
+	return pieces
 
 
 ## Fills a polygon, skipping one too degenerate to triangulate (a limb

@@ -124,14 +124,16 @@ static func _leg(ci: CanvasItem, b: Dictionary, hip: Vector2, knee: Vector2, ank
 	var back: Vector2 = shin_dir.orthogonal() * b.facing
 	if back.dot(Vector2(-b.facing, 0.0)) < 0.0 and not b.horizontal:
 		back = -back
-	Shapes.capsule(ci, hip, knee, 4.6 * u * girth + rim, 3.0 * u * girth + rim, Shapes.outline_of(skin))
-	Shapes.capsule(ci, knee, ankle, 2.9 * u * girth + rim, 1.7 * u + rim, Shapes.outline_of(skin))
-	Shapes.capsule(ci, knee.lerp(ankle, 0.12) + back * 0.9 * u, knee.lerp(ankle, 0.5) + back * 0.5 * u, 3.0 * u * girth + rim, 2.0 * u + rim, Shapes.outline_of(skin))
-	Shapes.capsule(ci, hip, knee, 4.6 * u * girth, 3.0 * u * girth, skin)
-	Shapes.capsule(ci, knee, ankle, 2.9 * u * girth, 1.7 * u, skin)
-	Shapes.capsule(ci, knee.lerp(ankle, 0.12) + back * 0.9 * u, knee.lerp(ankle, 0.5) + back * 0.5 * u, 3.0 * u * girth, 2.0 * u, skin)
+	# The near leg runs on from the shorts already drawn on the hips, so
+	# neither the skin nor the shorts' leg is outlined where it lies over them.
+	var hips: PackedVector2Array = b.get("shorts", PackedVector2Array())
+	Shapes.silhouette(ci, [Shapes.capsule_points(hip, knee, 4.6 * u * girth, 3.0 * u * girth),
+		Shapes.capsule_points(knee, ankle, 2.9 * u * girth, 1.7 * u),
+		Shapes.capsule_points(knee.lerp(ankle, 0.12) + back * 0.9 * u, knee.lerp(ankle, 0.5) + back * 0.5 * u, 3.0 * u * girth, 2.0 * u)], skin, rim, hips)
 	ci.draw_line(knee.lerp(ankle, 0.15) - back * 1.4 * u, knee.lerp(ankle, 0.8) - back * 0.7 * u, skin.lightened(0.14), maxf(1.0, u * 0.9), true)
-	Shapes.limb(ci, hip, hip.lerp(knee, 0.42), 5.0 * u * girth, 3.9 * u * girth, colours.shorts, rim)
+	var cuff: Vector2 = hip.lerp(knee, 0.42)
+	Shapes.silhouette(ci, [Shapes.capsule_points(hip, cuff, 5.0 * u * girth, 3.9 * u * girth)], colours.shorts, rim, hips)
+	Shapes.highlight(ci, hip, cuff, 5.0 * u * girth, 3.9 * u * girth, colours.shorts)
 	_shoe(ci, b, ankle, shin_dir, colours, heel_lift)
 
 
@@ -152,17 +154,31 @@ static func _shoe(ci: CanvasItem, b: Dictionary, ankle: Vector2, shin_dir: Vecto
 	ci.draw_line(ankle + (fwd * 0.2 + down * 0.9) * u, ankle + (fwd * 4.4 + down * 0.2) * u, colours.top, maxf(1.0, u * 0.8), true)
 
 
-## An arm: a short sleeve over the shoulder, bare forearm and a hand.
+## An arm: a short sleeve over the shoulder, then the upper arm, forearm and
+## hand as one outlined shape, so the elbow and wrist bend without seams.
 static func _arm(ci: CanvasItem, b: Dictionary, shoulder: Vector2, elbow: Vector2, hand: Vector2, colours: Dictionary) -> void:
 	var u: float = b.u
 	var girth: float = 0.82 + 0.2 * float(b.build)
 	var rim: float = b.rim
-	Shapes.limb(ci, shoulder, elbow, 3.0 * u * girth, 2.1 * u * girth, colours.skin, rim)
-	Shapes.limb(ci, elbow, hand, 2.1 * u * girth, 1.6 * u, colours.skin, rim)
-	Shapes.limb(ci, shoulder, shoulder.lerp(elbow, 0.45), 4.0 * u * girth, 3.3 * u * girth, colours.top, rim)
 	var along: Vector2 = (hand - elbow).normalized()
-	Shapes.ellipse(ci, hand + along * 1.0 * u, 2.5 * u + rim, 2.0 * u + rim, Shapes.outline_of(colours.skin), along.angle())
-	Shapes.ellipse(ci, hand + along * 1.0 * u, 2.5 * u, 2.0 * u, colours.skin, along.angle())
+	Shapes.silhouette(ci, [Shapes.capsule_points(shoulder, elbow, 3.0 * u * girth, 2.1 * u * girth),
+		Shapes.capsule_points(elbow, hand, 2.1 * u * girth, 1.6 * u),
+		Shapes.ellipse_points(hand + along * 1.0 * u, 2.5 * u, 2.0 * u, along.angle(), 16)], colours.skin, rim)
+	Shapes.highlight(ci, shoulder, elbow, 3.0 * u * girth, 2.1 * u * girth, colours.skin)
+	Shapes.highlight(ci, elbow, hand, 2.1 * u * girth, 1.6 * u, colours.skin)
+	var cuff: Vector2 = shoulder.lerp(elbow, 0.45)
+	Shapes.silhouette(ci, [Shapes.capsule_points(shoulder, cuff, 4.0 * u * girth, 3.3 * u * girth)], colours.top, rim, _shoulder_cap(b, shoulder))
+	Shapes.highlight(ci, shoulder, cuff, 4.0 * u * girth, 3.3 * u * girth, colours.top)
+
+
+## The part of the shirt around a shoulder, where a sleeve drawn over it
+## should flow into the shirt instead of showing its own seam. Empty until
+## the shirt is drawn (the far arm sits behind it).
+static func _shoulder_cap(b: Dictionary, shoulder: Vector2) -> PackedVector2Array:
+	if not b.has("shirt"):
+		return PackedVector2Array()
+	var cap: Array = Geometry2D.intersect_polygons(b.shirt, Shapes.ellipse_points(shoulder, 5.0 * b.u, 5.0 * b.u))
+	return cap[0] if not cap.is_empty() else PackedVector2Array()
 
 
 ## The torso in profile: back, chest and (with a bigger build) belly, a
@@ -178,9 +194,11 @@ static func _torso(ci: CanvasItem, b: Dictionary, colours: Dictionary) -> void:
 	var neck_top: Vector2 = Head.centre(b) - b.up * 2.0 * u
 	Shapes.limb(ci, neck_base, neck_top, 2.8 * u, 2.5 * u, colours.skin.darkened(0.06), b.rim)
 	var shorts: PackedVector2Array = _outline(b, front_profile, back_profile, -0.14, 0.2, depth * 1.04)
-	Shapes.poly(ci, Shapes.smooth(shorts, 2), colours.shorts, b.rim)
+	b.shorts = Shapes.smooth(shorts, 2)
+	Shapes.poly(ci, b.shorts, colours.shorts, b.rim)
 	var shirt: PackedVector2Array = Shapes.smooth(_outline(b, front_profile, back_profile, 0.12, 1.0, depth), 2)
 	Shapes.poly(ci, shirt, colours.top, b.rim)
+	b.shirt = shirt
 	var lit_front: bool = Vector2(b.front).dot(Shapes.LIGHT) > 0.0
 	var shade: PackedVector2Array = _edge_strip(b, back_profile if lit_front else front_profile, not lit_front, depth, 2.4 * u)
 	Shapes.fill(ci, shade, Color(colours.top.darkened(0.22), 0.85))
