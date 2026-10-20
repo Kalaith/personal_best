@@ -15,7 +15,15 @@ var main: Control
 func tour() -> void:
 	main = await open_scene("res://scenes/main.tscn")
 	main.save.store.enabled = false
+	main.settings.store.save_enabled = false
 	await shot("01_title")
+	main.open_settings()
+	await frames(10)
+	await shot("01b_settings")
+	main.settings_page.tabs.current_tab = 1
+	await frames(5)
+	await shot("01c_settings_controls")
+	main.close_settings()
 	main._new_season()
 	await seconds(1.4)
 	await shot("02_intake_walk")

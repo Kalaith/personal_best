@@ -24,8 +24,13 @@ the numbers are tuned only against the scripted coaches in `tools/season_sim.gd`
 - **Save system included** (the GDD puts it in Milestone 3) because a season
   takes over an hour. Saved at the planner only; quitting mid-week replays
   that week from its start. `scripts/core/save_game.gd`.
-- **No audio, tutorial or settings screen.** The title and each exercise
-  card explain the controls instead.
+- **No audio or tutorial.** The title and each exercise card explain the
+  controls instead.
+- **Settings** (from the title and the planner, not mid-session, because the
+  bar keeps moving behind the page): full screen, interface size (85–125 %),
+  and rebinding the coaching key and gamepad button. Gamepad B stays Back.
+  Kept in `user://settings.json`, apart from the season save.
+  `scripts/ui/game_settings.gd`.
 
 ## Readiness and results
 

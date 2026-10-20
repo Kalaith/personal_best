@@ -3,6 +3,8 @@ extends Control
 ## screen to screen: title → each client's intake and first routine → the
 ## weekly planner → that week's coached sessions and their wrap-ups → the
 ## week's summary (with any mini goal) → … → race day → the season's end.
+## Also owns the player's settings and the settings page over the title and
+## the planner.
 const Balance = preload("res://addons/hatchery/core/balance.gd")
 const ScreenSwitcher = preload("res://addons/hatchery/ui/screen_switcher.gd")
 const Display = preload("res://addons/hatchery/settings/display.gd")
@@ -14,6 +16,7 @@ const ShopRules = preload("res://scripts/core/shop_rules.gd")
 const SessionSim = preload("res://scripts/core/session_sim.gd")
 const SessionReport = preload("res://scripts/core/session_report.gd")
 const Style = preload("res://scripts/ui/style.gd")
+const GameSettings = preload("res://scripts/ui/game_settings.gd")
 const TitleScreen = preload("res://scripts/ui/title_screen.gd")
 const IntakeScreen = preload("res://scripts/ui/intake_screen.gd")
 const RoutineScreen = preload("res://scripts/ui/routine_screen.gd")
@@ -28,6 +31,11 @@ const FinaleScreen = preload("res://scripts/ui/finale_screen.gd")
 var catalog := Catalog.new()
 var game: GameState
 var save: SaveGame
+var settings: GameSettings
+## The settings page while it is open over the current screen.
+var settings_page: Control
+## What had focus when the settings page opened, to return to on close.
+var _focus_before: Control
 var screens: ScreenSwitcher = ScreenSwitcher.new(self) as ScreenSwitcher
 ## This week's booked clients, in day order, and which one is next.
 var _week_sessions: Array = []
@@ -41,6 +49,8 @@ var _fade: ColorRect
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = Style.make_theme()
+	settings = GameSettings.new(get_tree())
+	settings.load_and_apply()
 	if not catalog.load_all():
 		var error: Label = Style.ui.wrapped("Personal Best could not load its data:\n" + "\n".join(catalog.errors), 16, Style.RED)
 		error.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -63,8 +73,31 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _show(next: Control, back: Callable = Callable()) -> void:
+	close_settings()
 	screens.show(next, back)
+	if next.has_signal("settings_requested"):
+		next.connect("settings_requested", open_settings)
 	move_child(_fade, -1)
+
+
+func open_settings() -> void:
+	if is_instance_valid(settings_page):
+		return
+	_focus_before = get_viewport().gui_get_focus_owner()
+	settings_page = settings.make_page()
+	settings_page.close_requested.connect(close_settings)
+	add_child(settings_page)
+	move_child(_fade, -1)
+	settings_page.close_button.grab_focus.call_deferred()
+
+
+func close_settings() -> void:
+	if not is_instance_valid(settings_page):
+		return
+	settings_page.queue_free()
+	settings_page = null
+	if is_instance_valid(_focus_before) and _focus_before.is_visible_in_tree():
+		_focus_before.grab_focus.call_deferred()
 
 
 ## Fades to black, runs `between` (which swaps the screen) and fades back.

@@ -5,6 +5,7 @@ extends Control
 ## it, then its beats play out. Space, a left click or gamepad A stops the
 ## marker (and starts or skips a card).
 const Style = preload("res://scripts/ui/style.gd")
+const GameSettings = preload("res://scripts/ui/game_settings.gd")
 const GymView = preload("res://scripts/ui/gym_view.gd")
 const Portrait = preload("res://scripts/ui/portrait.gd")
 const SlideBar = preload("res://scripts/ui/slide_bar.gd")
@@ -162,7 +163,7 @@ func _show_card(title: String, lines: Array) -> void:
 		var text: Label = Style.ui.wrapped(line, 16, Style.PAPER)
 		text.custom_minimum_size.x = 636
 		_card_text.add_child(text)
-	var begin: Button = Style.ui.button("Begin  (Space)", _begin, true)
+	var begin: Button = Style.ui.button("Begin  (%s)" % GameSettings.coach_key(), _begin, true)
 	begin.size_flags_horizontal = Control.SIZE_SHRINK_END
 	_card_text.add_child(begin)
 	_card.show()

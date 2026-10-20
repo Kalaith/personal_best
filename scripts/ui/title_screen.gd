@@ -4,10 +4,12 @@ extends Control
 const Style = preload("res://scripts/ui/style.gd")
 const GymView = preload("res://scripts/ui/gym_view.gd")
 const Display = preload("res://addons/hatchery/settings/display.gd")
+const GameSettings = preload("res://scripts/ui/game_settings.gd")
 
 signal continue_requested
 signal new_requested
 signal quit_requested
+signal settings_requested
 
 var has_save: bool = false
 var notice: String = ""
@@ -30,7 +32,7 @@ func _ready() -> void:
 	var tagline: Label = Style.ui.wrapped("You train people out of a backyard shed. Two of them want to run the same marathon in twelve weeks. They could hardly be more different.", 19, Style.PAPER)
 	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(tagline)
-	var how: Label = Style.ui.wrapped("Plan each client's routine, then coach them through sessions with one sliding bar: press Space, click or A to stop the marker in the right zone. At peak moments, read their face and signal colour, then push or hold back. Pushing harder is not always right.", 15)
+	var how: Label = Style.ui.wrapped("Plan each client's routine, then coach them through sessions with one sliding bar: press %s, click or A to stop the marker in the right zone. At peak moments, read their face and signal colour, then push or hold back. Pushing harder is not always right." % GameSettings.coach_key(), 15)
 	how.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(how)
 	var buttons: HBoxContainer = Style.ui.hbox(16)
@@ -39,6 +41,7 @@ func _ready() -> void:
 	if has_save:
 		buttons.add_child(Style.ui.button("Continue season", func() -> void: continue_requested.emit(), true))
 	buttons.add_child(Style.ui.button("New season", _ask_new, not has_save))
+	buttons.add_child(Style.ui.button("Settings", func() -> void: settings_requested.emit()))
 	var quit: Button = Style.ui.button("Quit", func() -> void: quit_requested.emit())
 	quit.disabled = not Display.can_quit()
 	buttons.add_child(quit)

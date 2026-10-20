@@ -14,6 +14,7 @@ signal open_shop
 signal book(state: RefCounted, day: String)
 signal start_week
 signal quit_to_title
+signal settings_requested
 
 var game: RefCounted
 var arrived: Array = []
@@ -140,6 +141,7 @@ func _booking(state: RefCounted) -> VBoxContainer:
 func _footer() -> HBoxContainer:
 	var row: HBoxContainer = Style.ui.hbox(12)
 	row.add_child(Style.ui.button("Title", func() -> void: quit_to_title.emit(), false, 15))
+	row.add_child(Style.ui.button("Settings", func() -> void: settings_requested.emit(), false, 15))
 	var pending: String = "" if game.pending.is_empty() else ", %d arriving" % game.pending.size()
 	row.add_child(Style.ui.button("Shop  (slots %d/%d%s)" % [game.slots_used(), game.slots_total(), pending], func() -> void: open_shop.emit()))
 	row.add_child(Style.ui.label("Clients %d/%d" % [game.clients.size(), game.capacity()], 14, Style.MUTED))
