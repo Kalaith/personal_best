@@ -195,6 +195,11 @@ rates: review after playtesting.
 - All art is drawn in code (figures, faces, shed, road, track); no assets
   besides the icon. Figures are built from each client's `look` in
   `clients.json`.
+- One piece of music: an original upbeat rock loop (C minor, 112 BPM, in
+  the spirit of an '80s training-montage anthem) synthesised by
+  `tools/compose_theme.gd` and kept as `assets/audio/shed_theme.ogg`. It
+  loops under every screen on a Music bus with a volume slider in Settings
+  (default 60 %). No sound effects yet.
 - The race is shown as a short running scene, not a playable race, per the
   GDD.
 - The educational disclaimer is on the title screen.

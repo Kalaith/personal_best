@@ -4,7 +4,7 @@ extends Control
 ## weekly planner → that week's coached sessions and their wrap-ups → the
 ## week's summary (with any mini goal) → … → race day → the season's end.
 ## Also owns the player's settings and the settings page over the title and
-## the planner.
+## the planner, and the workout theme that loops under every screen.
 const Balance = preload("res://addons/hatchery/core/balance.gd")
 const ScreenSwitcher = preload("res://addons/hatchery/ui/screen_switcher.gd")
 const Display = preload("res://addons/hatchery/settings/display.gd")
@@ -27,6 +27,7 @@ const WrapupScreen = preload("res://scripts/ui/wrapup_screen.gd")
 const WeekScreen = preload("res://scripts/ui/week_screen.gd")
 const RaceScreen = preload("res://scripts/ui/race_screen.gd")
 const FinaleScreen = preload("res://scripts/ui/finale_screen.gd")
+const THEME: AudioStreamOggVorbis = preload("res://assets/audio/shed_theme.ogg")
 
 var catalog := Catalog.new()
 var game: GameState
@@ -44,6 +45,7 @@ var _week_index: int = 0
 var _arrived: Array = []
 var _notice: String = ""
 var _fade: ColorRect
+var _music: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -51,6 +53,7 @@ func _ready() -> void:
 	theme = Style.make_theme()
 	settings = GameSettings.new(get_tree())
 	settings.load_and_apply()
+	_start_music()
 	if not catalog.load_all():
 		var error: Label = Style.ui.wrapped("Personal Best could not load its data:\n" + "\n".join(catalog.errors), 16, Style.RED)
 		error.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -66,6 +69,19 @@ func _ready() -> void:
 	_fade.z_index = 100
 	add_child(_fade)
 	show_title()
+
+
+## The looping theme (rendered by tools/compose_theme.gd) on the Music bus,
+## whose level the settings page sets. Headless runs skip playback.
+func _start_music() -> void:
+	_music = AudioStreamPlayer.new()
+	_music.name = "Music"
+	_music.stream = THEME
+	_music.bus = &"Music"
+	_music.volume_db = -4.0
+	add_child(_music)
+	if not Display.is_headless():
+		_music.play()
 
 
 func _unhandled_input(event: InputEvent) -> void:

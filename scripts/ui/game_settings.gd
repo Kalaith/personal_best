@@ -1,11 +1,12 @@
 extends RefCounted
-## The player's preferences (window, interface size and the coaching key and
-## button) kept in user://settings.json, apart from the season save, and
+## The player's preferences (music volume, window, interface size and the
+## coaching key and button) kept in user://settings.json, apart from the season save, and
 ## pushed to the engine whenever one changes. Builds the toolkit's settings
 ## page in the shed's colours, to open over any screen.
 const SettingsStore = preload("res://addons/hatchery/settings/settings_store.gd")
 const SettingsPanel = preload("res://addons/hatchery/ui/settings_panel.gd")
 const Display = preload("res://addons/hatchery/settings/display.gd")
+const Levels = preload("res://addons/hatchery/audio/levels.gd")
 const KeyBindings = preload("res://addons/hatchery/input/key_bindings.gd")
 const PadBindings = preload("res://addons/hatchery/input/pad_bindings.gd")
 const Style = preload("res://scripts/ui/style.gd")
@@ -13,13 +14,14 @@ const Style = preload("res://scripts/ui/style.gd")
 ## The interface size slider runs from 85 % to 125 %; 0.375 is 100 %.
 const SCALE_MIN: float = 0.85
 const SCALE_MAX: float = 1.25
-const DEFAULTS: Dictionary = {"fullscreen": false, "ui_scale": 0.375}
+const DEFAULTS: Dictionary = {"music": 0.6, "fullscreen": false, "ui_scale": 0.375}
 const SECTIONS: Array = [
+	{"title": "Sound", "sliders": ["music"]},
 	{"title": "Display", "sliders": ["ui_scale"], "toggles": ["fullscreen"]},
 ]
 const ACTIONS: Dictionary = {"coach": "Coach (stop the marker)"}
 const WORDS: Dictionary = {
-	"setting_fullscreen": "Full screen", "setting_ui_scale": "Interface size",
+	"setting_music": "Music", "setting_fullscreen": "Full screen", "setting_ui_scale": "Interface size",
 	"settings_pad": "Gamepad button",
 }
 
@@ -29,6 +31,7 @@ var tree: SceneTree
 
 func _init(scene_tree: SceneTree, path: String = "user://settings.json") -> void:
 	tree = scene_tree
+	Levels.ensure_bus("Music")
 	store = SettingsStore.new(DEFAULTS, path)
 	store.keys = KeyBindings.new(ACTIONS)
 	# B always goes back, so it cannot also coach.
@@ -51,6 +54,8 @@ func apply(key: String) -> void:
 	match key:
 		"":
 			apply_all()
+		"music":
+			Levels.set_bus("Music", float(store.values.music))
 		"fullscreen":
 			Display.set_fullscreen(bool(store.values.fullscreen))
 		"ui_scale":
