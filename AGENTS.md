@@ -21,7 +21,7 @@ Personal Best is a 2D coaching game: the player is a personal trainer working ou
 ## Project checks
 
 - `tools/season_sim.gd` plays whole seasons headlessly with scripted coaching (good, average and careless) and prints readiness at each milestone and the event results. Run it after a balance change:
-  `& "C:\Program Files\Godot\Godot_v4.2.2-stable_mono_win64_console.exe" --headless --path . --script res://tools/season_sim.gd`
+  `& "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe" --headless --path . --script res://tools/season_sim.gd`
 - `tools/parse_all.gd` compiles every script (`--headless --script res://tools/parse_all.gd`), and the parse/import check is `--headless --editor --quit`.
 - `tools/capture.gd` drives the real game through every screen and saves PNGs (needs a window, not `--headless`): `--path . --script res://tools/capture.gd -- <output dir>`.
 - Verify anything visual by running the game (`Run.ps1`).
@@ -36,7 +36,7 @@ Peg now tells you when her legs are sore if you ask the right question (check-in
 
 ## Publishing
 
-Publishing (`publish.ps1`, `publish-itch.ps1`) requires separate authorisation. `.\publish.ps1 -BuildOnly` (export only, no deploy) is fine for verification. Both are the shared templates from `../godot_toolkit/templates/`. Exports need the **standard (non-mono)** Godot 4.2.2 console editor; `Run.ps1` uses the installed mono editor for playing.
+Publishing (`publish.ps1`, `publish-itch.ps1`) requires separate authorisation. `.\publish.ps1 -BuildOnly` (export only, no deploy) is fine for verification. Both are the shared templates from `../godot_toolkit/templates/`. Exports need the **standard (non-mono)** Godot 4.7.2 console editor; `Run.ps1` uses the installed mono editor for playing.
 
 ## Shared WebHatchery Godot standards
 
@@ -50,7 +50,7 @@ This section is identical in the AGENTS.md of every WebHatchery Godot project (`
 
 ### Code
 
-- Godot **4.2.2** GDScript. The renderer is set per project (see above).
+- Godot **4.7.2** GDScript. The renderer is set per project (see above).
 - Static typing everywhere: variables, parameters and return types.
 - Load dependencies with `const X = preload("res://...")`.
 - Tabs, LF, UTF-8, final newline (`.editorconfig`).
