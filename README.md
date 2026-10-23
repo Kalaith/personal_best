@@ -114,7 +114,7 @@ advice.
 
 ## For developers
 
-- Design: `gdd_personal_best.md`
+- Design: `docs/GAME_DESIGN.md`
 - Decisions to review: `docs/DECISIONS.md`
 - Agent and engineering rules: `AGENTS.md`
 - Toolkit link: `..\godot_toolkit\tools\Link-Toolkit.ps1 -ProjectDir .`

@@ -1,7 +1,7 @@
 # Personal Best: decisions to review
 
 Written 2026-10-20 while building the first playable prototype from
-`gdd_personal_best.md` (draft 0.3). Every item below is a choice made where
+`docs/GAME_DESIGN.md` (draft 0.3). Every item below is a choice made where
 the design was silent, ambiguous or had to be adapted. Each says what was
 built and where to change it. None of it has been playtested by a person yet;
 the numbers are tuned only against the scripted coaches in `tools/season_sim.gd`.
