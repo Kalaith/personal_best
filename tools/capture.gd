@@ -2,7 +2,7 @@ extends "res://addons/hatchery/testing/capture_runner.gd"
 ## Drives the real game through every screen and saves a PNG of each, with
 ## saving turned off. Needs a rendering window (not --headless):
 ##   godot --path . --script res://tools/capture.gd
-## Shots go to docs/verification/ (the toolkit's capture runner).
+## Shots go to docs/verification/ (the toolkit's capture runner). Audio is muted.
 ## Later weeks are reached by coaching automatically (as tools/season_sim.gd
 ## does) so the tour can show mini goals, race day and the finale.
 const WeekRules = preload("res://scripts/core/week_rules.gd")
@@ -15,6 +15,8 @@ var main: Control
 
 func tour() -> void:
 	main = await open_scene("res://scenes/main.tscn")
+	# Muted after the scene opens, because loading settings applies the saved volume to the bus.
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), true)
 	main.save.store.enabled = false
 	main.settings.store.save_enabled = false
 	await shot("01_title")
