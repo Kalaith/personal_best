@@ -18,19 +18,19 @@ static func pick(sim: RefCounted, exercises: Array, fatigue_modifier: float) -> 
 		var score: float = float(exercise.score)
 		if exercise.unsuitable:
 			var why: String = exercise.notes[0].text if not exercise.notes.is_empty() else "it did not suit them today"
-			candidates.append({"kind": "change", "priority": 6.0, "text": "%s gave half value: %s Change it in the routine." % [exercise.name, why]})
+			candidates.append({"kind": "change", "priority": 6.0, "text": "%s gave half value. Change it in the routine." % exercise.name})
 		if score >= 0.85:
-			candidates.append({"kind": "worked", "priority": 1.0 + score, "text": "Sharp coaching in %s (%d%%): that lifted the whole session." % [String(exercise.name).to_lower(), int(round(score * 100.0))]})
+			candidates.append({"kind": "worked", "priority": 1.0 + score, "text": "Sharp %s coaching lifted the whole session." % String(exercise.name).to_lower()})
 		elif score < 0.5 and lines.minigame_advice.has(minigame):
 			candidates.append({"kind": "change", "priority": 2.5, "text": String(lines.minigame_advice[minigame]).format({"exercise": String(exercise.name).to_lower(), "name": name})})
 	if fatigue_modifier < 0.85:
-		candidates.append({"kind": "change", "priority": 3.5, "text": "%s arrived tired, so everything counted for %d%%. A lighter week or foam rolling lets the next session count in full." % [name, int(round(fatigue_modifier * 100.0))]})
+		candidates.append({"kind": "change", "priority": 3.5, "text": "%s arrived tired: everything counted for %d%%. Rest or foam rolling." % [name, int(round(fatigue_modifier * 100.0))]})
 	var worked: String = _best(candidates, "worked")
 	var change: String = _best(candidates, "change")
 	if worked.is_empty():
-		worked = "%s got through the whole session with you. Every right call builds rapport and widens the targets." % name
+		worked = "Every right call builds rapport and widens the targets."
 	if change.is_empty():
-		change = "Nothing went wrong today. To keep raising readiness: " + String(lines.guidance[Readiness.weakest(sim.client)[0]])
+		change = "All good. Next: " + String(lines.guidance[Readiness.weakest(sim.client)[0]])
 	return {"worked": worked, "change": change}
 
 

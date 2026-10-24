@@ -212,6 +212,21 @@ rates: review after playtesting.
   with the body (a fist pump, a yawn, a calf rub, a head rub); a question
   that misses gets only a shrug, so it gives nothing away. People are drawn
   30 % larger at the check-in; the room is not.
+- Less to read, more to see. The planning and result screens (intake
+  assessment, routine, planner, session wrap-up, week summary, mini goal,
+  race day and the finale) carry about half the words they did, or fewer.
+  `scripts/ui/charts.gd` draws what the sentences used to say: a readiness
+  ring with a notch at the next pass mark, a radar of the five attributes
+  against what the goal needs, before/after bars for every change, a
+  twelve-week strip (blocks, mini goals, race flag), a signal key (push or
+  hold at green, amber, red), a race time line (goal, finish, the band
+  race-day luck allows) and a readiness line for the season. Fatigue,
+  motivation and rapport are icon meters without numbers. Nothing was
+  removed from the rules: the full sentence moved into a tooltip, and a
+  wrong call, an unsuitable exercise or a warning still shows as plain
+  words, because those are the moments the player has to learn from.
+- Advice strings in `lines.json` and the wrap-up lessons were cut to one
+  short clause each, since they now appear on several screens.
 
 ## Not yet checked
 

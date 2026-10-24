@@ -11,6 +11,17 @@ const SessionSim = preload("res://scripts/core/session_sim.gd")
 const SessionReport = preload("res://scripts/core/session_report.gd")
 
 var main: Control
+## Words on screen per shot, printed after each capture so a screen's text
+## load can be compared before and after a change.
+var word_counts: Dictionary = {}
+
+
+## Saves the shot and counts the words a player would have to read in it.
+func shot(name: String) -> String:
+	var path: String = await super.shot(name)
+	word_counts[name] = _count_words(root)
+	print("WORDS %s: %d" % [name, word_counts[name]])
+	return path
 
 
 func tour() -> void:
@@ -179,3 +190,24 @@ func _auto_weeks(last_week: int) -> void:
 			return
 		WeekRules.end_week(game)
 		WeekRules.begin_week(game)
+
+
+## Words in every visible label, button and rich text that sits inside the window.
+func _count_words(node: Node) -> int:
+	var total: int = 0
+	if node is Control and (node as Control).is_visible_in_tree():
+		var control: Control = node
+		var text: String = ""
+		if control is RichTextLabel:
+			text = (control as RichTextLabel).get_parsed_text()
+		elif control is Label:
+			text = (control as Label).text
+		elif control is Button:
+			text = (control as Button).text
+		if not text.is_empty() and root.get_visible_rect().encloses(control.get_global_rect()):
+			for word in text.split(" ", false):
+				if word.strip_edges().length() > 0 and word != "·" and word != "→":
+					total += 1
+	for child in node.get_children():
+		total += _count_words(child)
+	return total

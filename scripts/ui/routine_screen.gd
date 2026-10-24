@@ -7,6 +7,9 @@ const Style = preload("res://scripts/ui/style.gd")
 const Widgets = preload("res://scripts/ui/widgets.gd")
 const RoutineRules = preload("res://scripts/core/routine_rules.gd")
 const Catalog = preload("res://scripts/core/catalog.gd")
+const Charts = preload("res://scripts/ui/charts.gd")
+const Readiness = preload("res://scripts/core/readiness.gd")
+const Balance = preload("res://addons/hatchery/core/balance.gd")
 
 signal confirmed(routine: Array)
 
@@ -34,10 +37,14 @@ func setup(owner: RefCounted, state: RefCounted, is_first: bool) -> void:
 func _ready() -> void:
 	var column: VBoxContainer = Style.screen(self, 10, 24)
 	var block: Dictionary = game.block()
-	column.add_child(Style.ui.heading("%s's routine · %s block (weeks %d–%d)" % [client.def.short, block.name, int(block.first_week), int(block.last_week)], 28))
-	column.add_child(Style.ui.wrapped(game.catalog.lines.blocks[block.id], 15, Style.PAPER))
+	column.add_child(Style.ui.heading("%s · %s block" % [client.def.short, block.name], 28))
+	var plan: HBoxContainer = Style.ui.hbox(24)
+	column.add_child(plan)
+	var strip: Control = Widgets.season_strip(game, 400.0, client)
+	plan.add_child(strip)
+	plan.add_child(Charts.signal_rule(bool(block.push_on_amber)))
 	if client.routine_block != block.id and not client.routine.is_empty():
-		column.add_child(Style.ui.wrapped("A new block has started. The advisor has drafted a routine for it; keep it, tweak it, or rebuild it.", 14, Style.AMBER))
+		column.add_child(Style.ui.wrapped("New block: routine redrafted.", 14, Style.AMBER))
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -87,32 +94,58 @@ func _entry_row(index: int) -> PanelContainer:
 	panel.add_child(column)
 	var row: HBoxContainer = Style.ui.hbox(8)
 	column.add_child(row)
-	row.add_child(_exercise_picker(index))
-	var sets_label: String = "Repeats" if def.minigame == "effort" else "Sets"
+	var picker: OptionButton = _exercise_picker(index)
+	picker.tooltip_text = "%s  (%s)" % [def.why, _minigame_name(def.minigame)]
+	row.add_child(picker)
 	var change_sets := func(step: int) -> void:
 		entry.sets = clampi(int(entry.sets) + step, int(def.sets.min), int(def.sets.max))
 		_rebuild()
-	row.add_child(_stepper(sets_label, str(entry.sets), change_sets, int(entry.sets) > int(def.sets.min), int(entry.sets) < int(def.sets.max)))
+	row.add_child(_stepper("%d×" % int(entry.sets), change_sets, int(entry.sets) > int(def.sets.min), int(entry.sets) < int(def.sets.max)))
 	if def.load_kind == "kg":
 		var change_kg := func(step: int) -> void:
 			entry.kg = clampi(int(entry.kg) + step * int(def.kg.step), int(def.kg.min), int(def.kg.max))
 			_rebuild()
-		row.add_child(_stepper("Weight", "%d kg" % int(entry.kg), change_kg, int(entry.kg) > int(def.kg.min), int(entry.kg) < int(def.kg.max)))
+		row.add_child(_stepper("%d kg" % int(entry.kg), change_kg, int(entry.kg) > int(def.kg.min), int(entry.kg) < int(def.kg.max)))
 	else:
-		row.add_child(_load_picker(entry, def))
+		row.add_child(_load_picker(entry))
 	var remove: Button = Style.ui.button("✕", func() -> void:
 		entries.remove_at(index)
 		_rebuild())
 	remove.tooltip_text = "Remove from the routine"
 	row.add_child(remove)
-	var tier: String = RoutineRules.tier(entry, client, def)
-	column.add_child(Style.ui.wrapped("%s  ·  %s intensity  ·  %s" % [def.why, tier.capitalize(), _minigame_name(def.minigame)], 13))
 	var assessed: Dictionary = RoutineRules.assess(entry, client, game)
 	var notes: Array = assessed.notes + RoutineRules.conditions(entry, game).notes
-	if assessed.unsuitable:
-		notes.push_front({"tone": "bad", "text": "Unsuitable: this entry gives half value."})
-	column.add_child(Widgets.notes(notes, 13))
+	column.add_child(_built_chips(entry, assessed, notes))
+	var problems: Array = notes.filter(func(note: Dictionary) -> bool: return note.tone == "bad" or note.tone == "warn")
+	if not problems.is_empty():
+		column.add_child(Widgets.notes(problems, 13))
 	return panel
+
+
+## What this entry builds, as attribute chips: green for a weak area (it
+## pays extra), dim for one already met (it does little). The advisor's
+## notes sit in the tooltip.
+func _built_chips(entry: Dictionary, assessed: Dictionary, notes: Array) -> HFlowContainer:
+	var chips := HFlowContainer.new()
+	chips.add_theme_constant_override("h_separation", 8)
+	var tip: PackedStringArray = []
+	for note in notes:
+		tip.append("%s %s" % [Style.tone_mark(note.tone), note.text])
+	chips.tooltip_text = "\n".join(tip)
+	var gains: Dictionary = RoutineRules.gains(entry, client, game)
+	var order: Array = gains.keys().filter(func(key: String) -> bool: return float(gains[key]) >= 0.05)
+	order.sort_custom(func(a: String, b: String) -> bool: return float(gains[a]) > float(gains[b]))
+	for key in order.slice(0, 3):
+		var share: float = Readiness.ratio(client, key)
+		var colour: Color = Style.ACCENT
+		if share < Balance.number("progress.weakness_ratio"):
+			colour = Style.GREEN
+		elif share >= Balance.number("progress.met_ratio"):
+			colour = Style.MUTED
+		chips.add_child(Charts.chip(game.catalog.attribute_name(key), colour))
+	if assessed.unsuitable:
+		chips.add_child(Charts.chip("½ value", Style.RED))
+	return chips
 
 
 func _minigame_name(id: String) -> String:
@@ -145,9 +178,8 @@ func _exercise_picker(index: int) -> OptionButton:
 	return picker
 
 
-func _load_picker(entry: Dictionary, def: Dictionary) -> HBoxContainer:
+func _load_picker(entry: Dictionary) -> HBoxContainer:
 	var row: HBoxContainer = Style.ui.hbox(4)
-	row.add_child(Style.ui.label("Load" if def.kind == "run" else "Level", 14, Style.MUTED))
 	for load_id in Catalog.LOADS:
 		var choose := func() -> void:
 			entry.load = load_id
@@ -158,15 +190,14 @@ func _load_picker(entry: Dictionary, def: Dictionary) -> HBoxContainer:
 	return row
 
 
-func _stepper(label: String, value: String, change: Callable, can_down: bool, can_up: bool) -> HBoxContainer:
+func _stepper(value: String, change: Callable, can_down: bool, can_up: bool) -> HBoxContainer:
 	var row: HBoxContainer = Style.ui.hbox(4)
-	row.add_child(Style.ui.label(label, 14, Style.MUTED))
 	var down: Button = Style.ui.button("−", func() -> void: change.call(-1), false, 22)
 	down.disabled = not can_down
 	down.custom_minimum_size = Vector2(46, 46)
 	row.add_child(down)
 	var shown: Label = Style.ui.utility(value, 16)
-	shown.custom_minimum_size.x = 48
+	shown.custom_minimum_size.x = 60
 	shown.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	row.add_child(shown)
 	var up: Button = Style.ui.button("+", func() -> void: change.call(1), false, 22)
@@ -186,30 +217,28 @@ func _add_row() -> Button:
 	return button
 
 
-## What one good coached session of this routine would build, and its cost.
+## What one good coached session of this routine would build, and its cost,
+## as bars: the attribute's value, the gain on top, the goal's need as a notch.
 func _preview() -> PanelContainer:
-	var parts: Array = Widgets.card("One good session")
+	var parts: Array = Widgets.card("One session")
 	var panel: PanelContainer = parts[0]
 	panel.custom_minimum_size.x = 300
+	panel.tooltip_text = "Expected gains at %d%% performance, before peak-moment bonuses. %s also trains alone %d times a week from this routine at half value." % [int(PREVIEW_PERFORMANCE * 100.0), client.def.short, int(client.def.own_sessions_per_week)]
 	var column: VBoxContainer = parts[1]
 	var totals: Dictionary = {}
 	for entry in entries:
 		var gains: Dictionary = RoutineRules.gains(entry, client, game)
 		for key in gains:
 			totals[key] = float(totals.get(key, 0.0)) + float(gains[key]) * PREVIEW_PERFORMANCE
-	column.add_child(Style.ui.wrapped("Expected gains at 80% performance, before peak-moment bonuses:", 13))
+	var rows: Array = []
 	for attribute in Catalog.ATTRIBUTES:
+		var value: float = float(client.attributes[attribute])
 		var gain: float = float(totals.get(attribute, 0.0))
-		var row: HBoxContainer = Style.ui.hbox(8)
-		var name: Label = Style.ui.label(game.catalog.attribute_name(attribute), 15)
-		name.custom_minimum_size.x = 140
-		row.add_child(name)
-		row.add_child(Style.ui.utility("+%.1f" % gain if gain >= 0.05 else "—", 15, Style.GREEN if gain >= 0.05 else Style.MUTED))
-		row.add_child(Style.ui.utility("(%d / %d)" % [int(round(float(client.attributes[attribute]))), int(client.def.requirements[attribute])], 13, Style.MUTED))
-		column.add_child(row)
+		rows.append({"label": Charts.short_name(game.catalog, attribute), "before": value, "after": value + gain, "mark": float(client.def.requirements[attribute]), "fine": true, "tip": "%s +%.1f" % [game.catalog.attribute_name(attribute), gain]})
+	column.add_child(Charts.change_rows(game.catalog, rows, 270.0))
 	var fatigue: float = RoutineRules.routine_fatigue(entries, client, game.catalog)
-	column.add_child(Style.ui.utility("Fatigue per session: %+d" % int(round(fatigue)), 15, Style.AMBER if fatigue >= 45.0 else Style.PAPER))
-	column.add_child(Style.ui.wrapped("%s also trains alone %d times a week from this routine at half value." % [client.def.short, int(client.def.own_sessions_per_week)], 13))
+	var tired: Array = [{"icon": "fatigue", "before": 0.0, "after": minf(fatigue, 100.0), "lower_is_better": true, "tip": "Fatigue per session: +%d" % int(round(fatigue))}]
+	column.add_child(Charts.change_rows(game.catalog, tired, 270.0))
 	var notes: Array = RoutineRules.routine_notes(entries, client, game)
 	if entries.is_empty():
 		notes.append({"tone": "bad", "text": "An empty routine can't be coached."})

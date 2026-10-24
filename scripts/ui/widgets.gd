@@ -5,6 +5,8 @@ extends RefCounted
 const Style = preload("res://scripts/ui/style.gd")
 const Readiness = preload("res://scripts/core/readiness.gd")
 const Catalog = preload("res://scripts/core/catalog.gd")
+const Charts = preload("res://scripts/ui/charts.gd")
+const Balance = preload("res://addons/hatchery/core/balance.gd")
 
 
 ## One row per attribute: name, a bar filled to value with the goal's need
@@ -94,3 +96,36 @@ static func card(title: String, alpha: float = 0.95) -> Array:
 	if not title.is_empty():
 		column.add_child(Style.ui.heading(title, 22))
 	return [panel, column]
+
+
+## The readiness ring with a notch at the next test; its tooltip says how
+## readiness is counted.
+static func readiness_ring(value: float, threshold: float, diameter: float, ghost: float = -1.0) -> Control:
+	var weights: Dictionary = Balance.dict("readiness.weights")
+	var parts: PackedStringArray = []
+	for attribute in Catalog.ATTRIBUTES:
+		parts.append("%d%% %s" % [int(round(float(weights[attribute]) * 100.0)), attribute.capitalize()])
+	var tip: String = "Readiness: each attribute counts up to the goal line (%s)." % ", ".join(parts)
+	return Charts.ring(value, threshold, diameter, "%d%%" % int(round(value)), tip, ghost)
+
+
+## Fatigue, motivation and rapport as icon meters with no numbers.
+static func condition_icons(state: RefCounted, width: float = 90.0) -> HBoxContainer:
+	var row: HBoxContainer = Style.ui.hbox(14)
+	row.add_child(Charts.meter("fatigue", state.fatigue, Style.RED if state.fatigue >= 50.0 else Style.AMBER, "Fatigue %d: carried into the next session (lower energy, less progress)." % int(round(state.fatigue)), width))
+	row.add_child(Charts.meter("motivation", state.motivation, Style.GREEN, "Motivation %d: how much they get from training alone." % int(round(state.motivation)), width))
+	row.add_child(Charts.meter("rapport", state.rapport, Color("9cc4e4"), "Rapport %d: widens the target zones in sessions." % int(round(state.rapport)), width))
+	return row
+
+
+## The season strip for this game; with `only` set, mini goals are coloured
+## by that client's results, otherwise by every client's (red if any missed).
+static func season_strip(game: RefCounted, width: float, only: RefCounted = null) -> Control:
+	var results: Dictionary = {}
+	for state in game.clients if only == null else [only]:
+		for milestone in state.milestones:
+			var week: int = int(milestone.week)
+			results[week] = bool(milestone.passed) and bool(results.get(week, true))
+	var strip: Control = Charts.season_strip(Balance.list("campaign.blocks"), game.week, Balance.list("milestones"), results, width)
+	strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return strip

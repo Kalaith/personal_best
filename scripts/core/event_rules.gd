@@ -53,6 +53,9 @@ static func run(game: RefCounted, state: RefCounted) -> Dictionary:
 		"race_fatigue": state.fatigue,
 		"niggle": niggle,
 		"predicted": Readiness.format_minutes(predicted),
+		"predicted_minutes": predicted,
+		"goal_minutes": goal,
+		"cutoff_minutes": cutoff,
 		"spread": spread,
 		"swing": swing,
 		"moments": moments,
@@ -105,5 +108,4 @@ static func _explain(state: RefCounted, readiness: float, race_ready: float, spr
 
 static func _advice(state: RefCounted, catalog: RefCounted) -> String:
 	var weakest: String = Readiness.weakest(state)[0]
-	var target: String = catalog.targets[state.def.target.type].name.to_lower()
-	return "For future %s clients like %s: %s" % [target, state.def.short, catalog.lines.guidance[weakest]]
+	return "Next time: " + String(catalog.lines.guidance[weakest])

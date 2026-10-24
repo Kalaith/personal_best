@@ -159,4 +159,5 @@ static func _test(game: RefCounted, state: RefCounted, milestone: Dictionary) ->
 	shown["client_name"] = state.def.short
 	shown["bonus"] = bonus
 	shown["guidance"] = guidance
+	shown["lagging"] = lagging
 	return shown

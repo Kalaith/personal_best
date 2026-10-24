@@ -8,6 +8,7 @@ Personal Best is a 2D coaching game: the player is a personal trainer working ou
 - Pushing harder is not always right. Holding back must stay a winning decision whenever the client signals red, and clients always show a readable signal (meter colour, face and a body-language line) before a push or hold-back choice.
 - Every result explains itself: session wrap-up, mini goals and the marathon say what caused the outcome in plain words. Do not add a number the player cannot trace back to a choice.
 - Session fees are never reduced by a missed goal; only bonuses are lost.
+- This is a fitness game: screens show before they tell. Prefer a ring, bar, radar, icon or time line to a sentence (`scripts/ui/charts.gd`), keep the full explanation in a tooltip, and spell out in words only what went wrong. Do not bring paragraphs back.
 - Age, gender and body size never set ability on their own. Starting attributes come from the intake assessment shown to the player.
 
 ## Project engineering

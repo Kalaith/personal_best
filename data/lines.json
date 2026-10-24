@@ -67,11 +67,11 @@
 		"knowledge": {"weak": "Went out far too fast in the first 5 km and paid for it.", "strong": "Ran even splits, exactly as planned."}
 	},
 	"guidance": {
-		"endurance": "Endurance is lagging. Easy runs, long runs and rowing build it; make sure the long run happens every week.",
-		"pace": "Pace is lagging. Tempo runs and intervals raise it, but only in Build and Peak blocks.",
-		"strength": "Strength is lagging. Squats, lunges, step-ups and core work help; pick weights they can lift with good form.",
-		"recovery": "Recovery is lagging. Foam rolling and lighter weeks help; a tired client gains less from every session.",
-		"knowledge": "Pacing Knowledge is lagging. Hitting the right effort in pace coaching teaches it."
+		"endurance": "Endurance lags: more easy and long runs.",
+		"pace": "Pace lags: tempo runs and intervals, in Build and Peak.",
+		"strength": "Strength lags: squats, lunges, step-ups, core.",
+		"recovery": "Recovery lags: foam rolling and lighter weeks.",
+		"knowledge": "Pacing Knowledge lags: nail the pace coaching."
 	},
 	"blocks": {
 		"base": "Build the base: mostly easy and long running, plus strength. Nothing heroic yet; at an amber signal, hold back.",
