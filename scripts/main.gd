@@ -7,6 +7,7 @@ extends Control
 ## the planner, and the workout theme that loops under every screen.
 const Balance = preload("res://addons/hatchery/core/balance.gd")
 const ScreenSwitcher = preload("res://addons/hatchery/ui/screen_switcher.gd")
+const SettingsHost = preload("res://addons/hatchery/ui/settings_host.gd")
 const Display = preload("res://addons/hatchery/settings/display.gd")
 const Catalog = preload("res://scripts/core/catalog.gd")
 const GameState = preload("res://scripts/core/game_state.gd")
@@ -33,10 +34,12 @@ var catalog := Catalog.new()
 var game: GameState
 var save: SaveGame
 var settings: GameSettings
-## The settings page while it is open over the current screen.
-var settings_page: Control
-## What had focus when the settings page opened, to return to on close.
-var _focus_before: Control
+## Opens the settings page over the current screen, and gives focus back on close.
+var settings_host: SettingsHost = SettingsHost.new(self) as SettingsHost
+## The settings page while it is open.
+var settings_page: Control:
+	get:
+		return settings_host.page
 var screens: ScreenSwitcher = ScreenSwitcher.new(self) as ScreenSwitcher
 ## This week's booked clients, in day order, and which one is next.
 var _week_sessions: Array = []
@@ -97,23 +100,14 @@ func _show(next: Control, back: Callable = Callable()) -> void:
 
 
 func open_settings() -> void:
-	if is_instance_valid(settings_page):
+	var page: Control = settings_host.open(settings.make_page)
+	if page == null:
 		return
-	_focus_before = get_viewport().gui_get_focus_owner()
-	settings_page = settings.make_page()
-	settings_page.close_requested.connect(close_settings)
-	add_child(settings_page)
 	move_child(_fade, -1)
-	settings_page.close_button.grab_focus.call_deferred()
 
 
 func close_settings() -> void:
-	if not is_instance_valid(settings_page):
-		return
-	settings_page.queue_free()
-	settings_page = null
-	if is_instance_valid(_focus_before) and _focus_before.is_visible_in_tree():
-		_focus_before.grab_focus.call_deferred()
+	settings_host.close()
 
 
 ## Fades to black, runs `between` (which swaps the screen) and fades back.

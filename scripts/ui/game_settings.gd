@@ -6,7 +6,7 @@ extends RefCounted
 const SettingsStore = preload("res://addons/hatchery/settings/settings_store.gd")
 const SettingsPanel = preload("res://addons/hatchery/ui/settings_panel.gd")
 const Display = preload("res://addons/hatchery/settings/display.gd")
-const Levels = preload("res://addons/hatchery/audio/levels.gd")
+const EngineSettings = preload("res://addons/hatchery/settings/engine_settings.gd")
 const KeyBindings = preload("res://addons/hatchery/input/key_bindings.gd")
 const PadBindings = preload("res://addons/hatchery/input/pad_bindings.gd")
 const Style = preload("res://scripts/ui/style.gd")
@@ -26,13 +26,14 @@ const WORDS: Dictionary = {
 }
 
 var store: SettingsStore
-var tree: SceneTree
+var engine: EngineSettings
 
 
 func _init(scene_tree: SceneTree, path: String = "user://settings.json") -> void:
-	tree = scene_tree
-	Levels.ensure_bus("Music")
 	store = SettingsStore.new(DEFAULTS, path)
+	engine = EngineSettings.new(store, scene_tree, {"Music": "music"})
+	engine.scale_min = SCALE_MIN
+	engine.scale_max = SCALE_MAX
 	store.keys = KeyBindings.new(ACTIONS)
 	# B always goes back, so it cannot also coach.
 	store.pad = PadBindings.new(ACTIONS, [JOY_BUTTON_B] as Array[int])
@@ -45,25 +46,16 @@ func load_and_apply() -> void:
 
 
 func apply_all() -> void:
-	for key in DEFAULTS:
-		apply(key)
+	engine.apply_all()
 
 
 ## Pushes one changed value to the engine ("" applies everything).
 func apply(key: String) -> void:
-	match key:
-		"":
-			apply_all()
-		"music":
-			Levels.set_bus("Music", float(store.values.music))
-		"fullscreen":
-			Display.set_fullscreen(bool(store.values.fullscreen))
-		"ui_scale":
-			Display.set_ui_scale(tree, ui_scale())
+	engine.apply(key)
 
 
 func ui_scale() -> float:
-	return Display.scale_from_fraction(float(store.values.ui_scale), SCALE_MIN, SCALE_MAX)
+	return engine.ui_scale()
 
 
 ## The key that coaches right now, for "press Space" style instructions.
@@ -84,9 +76,6 @@ func make_page() -> Control:
 	page.panel_size = Vector2(720, 560)
 	page.commit_on_release = ["ui_scale"]
 	page.text = func(word: String, english: String) -> String: return WORDS.get(word, english)
-	page.slider_text = func(word: String, value: float) -> String:
-		if word == "ui_scale":
-			return "%d%%" % roundi(Display.scale_from_fraction(value, SCALE_MIN, SCALE_MAX) * 100.0)
-		return "%d%%" % roundi(value * 100.0)
+	page.slider_text = engine.slider_text
 	page.applied.connect(apply)
 	return page
