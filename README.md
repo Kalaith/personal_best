@@ -116,5 +116,6 @@ advice.
 
 - Design: `docs/GAME_DESIGN.md`
 - Decisions to review: `docs/DECISIONS.md`
+- Next work, in priority order: `docs/NEXT_STEPS.md`
 - Agent and engineering rules: `AGENTS.md`
 - Toolkit link: `..\godot_toolkit\tools\Link-Toolkit.ps1 -ProjectDir .`
