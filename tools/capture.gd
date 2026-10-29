@@ -50,6 +50,9 @@ func tour() -> void:
 	main.screens.current.accepted.emit()
 	await frames(10)
 	await shot("05_routine")
+	await _inspect_routine_editor(main.screens.current)
+	if OS.get_cmdline_user_args().has("--routine-only"):
+		return
 	main.screens.current._confirm()
 	await frames(5)
 	main.screens.current._show_assessment()
@@ -101,6 +104,46 @@ func tour() -> void:
 	main.screens.current.continued.emit()
 	await seconds(1.6)
 	await shot("17_finale")
+
+
+## Exercise real editor controls, including a rebuild with keyboard focus.
+func _inspect_routine_editor(screen: Control) -> void:
+	var original: Array = screen.entries.duplicate(true)
+	var increase: Button = _routine_control(screen, "2_sets_up") as Button
+	increase.grab_focus()
+	increase.pressed.emit()
+	await frames(5)
+	assert(screen.entries[2].sets == original[2].sets + 1)
+	assert(root.gui_get_focus_owner() == _routine_control(screen, "2_sets_up"))
+	var hard: Button = _routine_control(screen, "3_load_hard") as Button
+	hard.grab_focus()
+	hard.pressed.emit()
+	await frames(5)
+	assert(screen.entries[3].load == "hard")
+	assert(root.gui_get_focus_owner() == _routine_control(screen, "3_load_hard"))
+	await shot("05b_routine_warning")
+	while not screen.entries.is_empty():
+		var remove: Button = _routine_control(screen, "0_remove") as Button
+		remove.grab_focus()
+		remove.pressed.emit()
+		await frames(3)
+	assert(screen._confirm_button.disabled)
+	assert(root.gui_get_focus_owner() == _routine_control(screen, "add"))
+	await shot("05c_routine_empty")
+	(_routine_control(screen, "add") as Button).pressed.emit()
+	await frames(3)
+	assert(screen.entries.size() == 1 and not screen._confirm_button.disabled)
+	screen.entries = original
+	screen._rebuild()
+	await frames(5)
+	print("Routine editor: edits, focus, removal, empty state and add verified")
+
+
+func _routine_control(screen: Control, key: String) -> Control:
+	for control in screen.find_children("*", "Control", true, false):
+		if String(control.get_meta("routine_focus", "")) == key:
+			return control as Control
+	return null
 
 
 ## Plays up to `presses` beats of the session on screen, aiming well.

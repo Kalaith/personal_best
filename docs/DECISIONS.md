@@ -248,6 +248,27 @@ rates: review after playtesting.
   Browser, gamepad, alternate interface scales and human play feel are not
   covered by this pass.
 
+## Routine editor refinement (29 October 2026)
+
+- The routine editor uses the planner's section dividers and footer pattern.
+  Numbered exercises have labelled Sets and Effort or Weight fields, aligned
+  controls, and a tick on the selected effort. The footer shows the number
+  of exercises and disables confirmation when the routine is empty.
+- The session preview labels its 80% performance assumption, distinguishes
+  current attributes, gains and goal marks, and separates session fatigue.
+  Empty routines show an add-exercise prompt instead of long-run advice.
+  Training rules and preview calculations are unchanged.
+- Editing restores keyboard focus after rebuilding controls and scrolls the
+  edited card into view so its warnings can be read. A removed control falls
+  back to an exercise picker, or Add an exercise when the list is empty.
+- Verification: all 50 scripts load and editor/import passes. Windowed
+  captures at 1280×800 cover the normal, unsuitable-effort and empty states.
+  The capture tour checks set/effort edits, focus retention, removal and add,
+  and runs through the finale. Pass `-- --routine-only` to the capture script
+  for a bounded intake/editor check. Exit still reports resource/ObjectDB
+  cleanup warnings. Browser, gamepad, alternate scales and human play feel
+  remain unverified.
+
 ## Remaining playtest checks
 
 - Gamepad play, the web export in a browser, and long sessions by a real
