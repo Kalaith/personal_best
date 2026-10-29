@@ -54,20 +54,18 @@ func _ready() -> void:
 
 func _header() -> HBoxContainer:
 	var row: HBoxContainer = Style.ui.hbox(22)
-	row.add_child(Style.ui.heading("Week %d/%d" % [game.week, Balance.integer("campaign.weeks")], 30))
+	row.add_child(Style.ui.heading("Weekly planner", 30))
+	row.add_child(Style.ui.label("Week %d / %d" % [game.week, Balance.integer("campaign.weeks")], 16, Style.MUTED))
 	row.add_child(Style.ui.spacer())
 	var weather: Dictionary = game.weather_kind()
 	var forecast: String = "Forecast: %s" % weather.name
 	if weather.bad:
 		forecast += " (outdoor runs lose value%s)" % (", but the treadmill covers it" if game.has_effect("weatherproof_runs") else "")
 	row.add_child(Charts.weather_icon(game.weather, 34.0, forecast))
-	var cash: HBoxContainer = Style.ui.hbox(6)
-	cash.add_child(Charts.icon_control("coin", 26.0, Style.AMBER))
-	cash.add_child(Style.ui.utility("%d" % game.cash, 22, Style.GREEN))
-	row.add_child(cash)
+	row.add_child(Widgets.resource_value("Budget", "$%d" % game.cash, Style.GREEN))
 	var per_level: int = Balance.integer("income.rep_points_per_level")
 	var rep: HBoxContainer = Style.ui.hbox(6)
-	rep.add_child(Charts.icon_control("star", 26.0, Style.AMBER))
+	rep.add_child(Style.ui.label("Reputation", 14, Style.MUTED))
 	rep.add_child(Style.ui.utility("%d" % game.reputation(), 22))
 	rep.add_child(Charts.pips(game.rep_points % per_level, per_level, Style.AMBER))
 	rep.tooltip_text = "Reputation %d. Passing a mini goal earns 1 point; a client reaching their marathon goal earns %d. Every %d points is a reputation level." % [game.reputation(), Balance.integer("income.rep_points_major"), per_level]
@@ -81,12 +79,14 @@ func _client_card(state: RefCounted) -> PanelContainer:
 	var panel: PanelContainer = parts[0]
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var column: VBoxContainer = parts[1]
+	column.add_theme_constant_override("separation", 6)
 	var goal: String = String(game.catalog.targets[state.def.target.type].describe).format({"cutoff": Readiness.format_minutes(Balance.number("event.cutoff_minutes")), "time": Readiness.format_minutes(float(state.def.target.minutes))})
 	column.add_child(Style.ui.label(goal, 15, Style.MUTED))
+	column.add_child(Widgets.section_label("Readiness & condition"))
 	var status: HBoxContainer = Style.ui.hbox(18)
 	column.add_child(status)
 	var threshold: float = float(game.next_milestone().get("threshold", 90))
-	status.add_child(Widgets.readiness_ring(Readiness.readiness(state), threshold, 104.0))
+	status.add_child(Widgets.readiness_ring(Readiness.readiness(state), threshold, 88.0))
 	var gauges: VBoxContainer = Style.ui.vbox(6)
 	gauges.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	status.add_child(gauges)
@@ -95,11 +95,13 @@ func _client_card(state: RefCounted) -> PanelContainer:
 	gauges.add_child(Charts.meter("fatigue", state.fatigue, Style.RED if state.fatigue >= 50.0 else Style.AMBER, "Fatigue %d: carried into the next session (lower energy, less progress)." % int(round(state.fatigue)), 150.0))
 	gauges.add_child(Charts.meter("motivation", state.motivation, Style.GREEN, "Motivation %d: how much they get from training alone." % int(round(state.motivation)), 150.0))
 	gauges.add_child(Charts.meter("rapport", state.rapport, Color("9cc4e4"), "Rapport %d: widens the target zones in sessions." % int(round(state.rapport)), 150.0))
+	column.add_child(Widgets.section_label("Training routine"))
 	for entry in state.routine:
 		column.add_child(_routine_row(entry))
 	var stale: bool = state.routine_block != game.block().id
 	var edit: Button = Style.ui.button("New block: review" if stale else "Edit routine", func() -> void: edit_routine.emit(state), stale, 15)
 	column.add_child(edit)
+	column.add_child(Widgets.section_label("Coached session"))
 	column.add_child(_booking(state))
 	return panel
 
@@ -149,28 +151,31 @@ func _projection(state: RefCounted) -> HBoxContainer:
 
 
 func _booking(state: RefCounted) -> VBoxContainer:
-	var column: VBoxContainer = Style.ui.vbox(4)
+	var column: VBoxContainer = Style.ui.vbox(8)
 	if not state.is_available(game.week):
 		column.add_child(Style.ui.wrapped("Away: %s." % state.unavailable_reason(game.week), 14, Style.AMBER))
 		return column
+	var summary: HBoxContainer = Style.ui.hbox(8)
+	var booked: bool = not state.booked_day.is_empty()
+	summary.add_child(Style.ui.label("Booked · %s" % state.booked_day if booked else "Choose a day", 15, Style.GREEN if booked else Style.PAPER))
+	summary.add_child(Style.ui.spacer())
+	summary.add_child(Style.ui.label("$%d / session" % game.session_fee(state), 14, Style.MUTED))
+	column.add_child(summary)
 	var row: HBoxContainer = Style.ui.hbox(6)
 	row.tooltip_text = "Book this week's coached session. Skipping a week costs motivation."
 	row.mouse_filter = Control.MOUSE_FILTER_PASS
 	column.add_child(row)
 	for day in Balance.list("campaign.days"):
-		var open: bool = WeekRules.booking_problem(game, state, day).is_empty()
+		var problem: String = WeekRules.booking_problem(game, state, day)
 		var chosen: bool = state.booked_day == day
 		var button: Button = Style.ui.button(day, func() -> void: book.emit(state, "" if chosen else day), chosen, 15)
-		button.custom_minimum_size = Vector2(72, 48)
-		button.disabled = not open
+		button.custom_minimum_size = Vector2(0, 48)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.disabled = not problem.is_empty()
+		button.tooltip_text = problem if not problem.is_empty() else ("Cancel %s's %s booking" if chosen else "Book %s on %s") % [state.def.short, day]
 		if chosen:
-			button.text = "+ " + day
+			button.text = "✓ " + day
 		row.add_child(button)
-	if not state.booked_day.is_empty():
-		var fee: HBoxContainer = Style.ui.hbox(4)
-		fee.add_child(Charts.icon_control("coin", 20.0, Style.AMBER))
-		fee.add_child(Style.ui.utility("%d" % game.session_fee(state), 16, Style.GREEN))
-		row.add_child(fee)
 	return column
 
 
@@ -185,7 +190,8 @@ func _footer() -> HBoxContainer:
 	row.add_child(seats)
 	row.add_child(Style.ui.spacer())
 	var booked: int = WeekRules.sessions(game).size()
-	var label: String = "Start week %d" % game.week if booked > 0 else "Start week %d (rest week)" % game.week
+	row.add_child(Style.ui.label("%d session%s booked" % [booked, "" if booked == 1 else "s"], 14, Style.MUTED))
+	var label: String = "Start week %d" % game.week if booked > 0 else "Start rest week"
 	var start: Button = Style.ui.button(label, func() -> void: start_week.emit(), true)
 	row.add_child(start)
 	start.grab_focus.call_deferred()

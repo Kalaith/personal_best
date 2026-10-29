@@ -63,6 +63,7 @@ func tour() -> void:
 		WeekRules.book(main.game, state, state.def.available_days[0])
 	main.show_planner()
 	await frames(5)
+	await shot("06b_planner_booked")
 	main.show_shop()
 	await frames(5)
 	await shot("07_shop")

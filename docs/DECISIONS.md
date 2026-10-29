@@ -228,7 +228,27 @@ rates: review after playtesting.
 - Advice strings in `lines.json` and the wrap-up lessons were cut to one
   short clause each, since they now appear on several screens.
 
-## Not yet checked
+## Planning interface refinement (29 October 2026)
+
+- The planner groups each client into readiness and condition, training
+  routine, and coached session. Booking shows the selected day with a tick,
+  the fee, and a total beside Start week. Unavailable days explain why in
+  their tooltip. Booking rules and fees are unchanged.
+- The planner and catalogue share labelled Budget and Reputation values
+  and quiet section dividers. Catalogue prices sit in a consistent action
+  column; a blocked order explains its requirement below the button.
+  Owned and pending kit use that same column for their delivery status.
+- The catalogue's starting-kit list is available on the Kit slots tooltip.
+  Delivery timing remains visible above the list. Later-season items keep
+  normal text contrast, with an explicit Coming later label.
+- Verification: all 50 scripts load; the headless editor/import check passes.
+  The windowed capture tour runs via `Run.ps1` at 1280×800. Planner, booked
+  planner, race-week planner and catalogue captures are inspected for layout.
+  The tour reports resource/ObjectDB cleanup warnings when it exits.
+  Browser, gamepad, alternate interface scales and human play feel are not
+  covered by this pass.
+
+## Remaining playtest checks
 
 - Gamepad play, the web export in a browser, and long sessions by a real
   player.

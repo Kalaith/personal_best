@@ -98,6 +98,26 @@ static func card(title: String, alpha: float = 0.95) -> Array:
 	return [panel, column]
 
 
+## A quiet section divider shared by planning and shopping.
+static func section_label(title: String) -> HBoxContainer:
+	var row: HBoxContainer = Style.ui.hbox(12)
+	row.add_child(Style.ui.label(title, 14, Style.MUTED))
+	var line := HSeparator.new()
+	line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	line.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(line)
+	return row
+
+
+## A compact labelled value; the same resource reads alike on every page.
+static func resource_value(title: String, value: String, colour: Color = Style.PAPER) -> HBoxContainer:
+	var row: HBoxContainer = Style.ui.hbox(8)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(Style.ui.label(title, 14, Style.MUTED))
+	row.add_child(Style.ui.utility(value, 22, colour))
+	return row
+
+
 ## The readiness ring with a notch at the next test; its tooltip says how
 ## readiness is counted.
 static func readiness_ring(value: float, threshold: float, diameter: float, ghost: float = -1.0) -> Control:
