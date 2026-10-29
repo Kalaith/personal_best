@@ -3,6 +3,10 @@
 Reviewed 25 October 2026 against `47019cf` and the current design and decisions.
 This is an ordered implementation backlog, not a change to the game rules.
 
+For the proposed full-game scope and production milestones, see
+`FULL_GAME_PLAN.md` (29 October 2026). Use that plan for expansion sequencing;
+this document retains the earlier detailed findings and verification evidence.
+
 ## Review assessment
 
 The core game is already a complete two-client, twelve-week season: intake,
