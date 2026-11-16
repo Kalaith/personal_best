@@ -6,6 +6,7 @@ const TitleBackdrop = preload("res://addons/hatchery/ui/title_backdrop.gd")
 const TITLE_ART: Texture2D = preload("res://assets/art/ui/title_screen.png")
 const Display = preload("res://addons/hatchery/settings/display.gd")
 const GameSettings = preload("res://scripts/ui/game_settings.gd")
+const Confirm = preload("res://addons/hatchery/ui/confirm.gd")
 
 signal continue_requested
 signal new_requested
@@ -15,7 +16,8 @@ signal settings_requested
 var has_save: bool = false
 var notice: String = ""
 var _scroll: ScrollContainer
-var _confirm: VBoxContainer
+var _confirm: Confirm
+var _new_button: Button
 
 
 func _ready() -> void:
@@ -49,17 +51,18 @@ func _ready() -> void:
 	column.add_child(buttons)
 	if has_save:
 		buttons.add_child(Style.ui.button("Continue season", func() -> void: continue_requested.emit(), true))
-	buttons.add_child(Style.ui.button("New season", _ask_new, not has_save))
+	_new_button = Style.ui.button("New season", _ask_new, not has_save)
+	buttons.add_child(_new_button)
 	buttons.add_child(Style.ui.button("Settings", func() -> void: settings_requested.emit()))
 	var quit: Button = Style.ui.button("Quit", func() -> void: quit_requested.emit())
 	quit.disabled = not Display.can_quit()
 	buttons.add_child(quit)
-	_confirm = Style.ui.vbox(8)
+	_confirm = Confirm.new()
 	_confirm.alignment = BoxContainer.ALIGNMENT_CENTER
-	_confirm.add_child(Style.ui.wrapped("Start over? The current season will be replaced.", 16, Style.AMBER))
-	_confirm.add_child(Style.ui.button("Start over", func() -> void: new_requested.emit(), true))
-	_confirm.add_child(Style.ui.button("Keep it", func() -> void: _confirm.hide()))
-	_confirm.hide()
+	_confirm.add_theme_constant_override("separation", 8)
+	_confirm.setup(Style.ui.wrapped("Start over? The current season will be replaced.", 16, Style.AMBER),
+		Style.ui.button("Start over", Callable(), true), Style.ui.button("Keep it"))
+	_confirm.confirmed.connect(func() -> void: new_requested.emit())
 	column.add_child(_confirm)
 	if not notice.is_empty():
 		column.add_child(Style.ui.wrapped(notice, 14, Style.AMBER))
@@ -70,8 +73,6 @@ func _ready() -> void:
 
 func _ask_new() -> void:
 	if has_save:
-		_confirm.show()
-		await get_tree().process_frame
-		_scroll.ensure_control_visible(_confirm)
+		_confirm.ask(_new_button)
 	else:
 		new_requested.emit()
