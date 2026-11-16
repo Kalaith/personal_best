@@ -7,6 +7,7 @@ const TITLE_ART: Texture2D = preload("res://assets/art/ui/title_screen.png")
 const Display = preload("res://addons/hatchery/settings/display.gd")
 const GameSettings = preload("res://scripts/ui/game_settings.gd")
 const Confirm = preload("res://addons/hatchery/ui/confirm.gd")
+const CreditsPage = preload("res://addons/hatchery/ui/credits_page.gd")
 
 signal continue_requested
 signal new_requested
@@ -54,6 +55,7 @@ func _ready() -> void:
 	_new_button = Style.ui.button("New season", _ask_new, not has_save)
 	buttons.add_child(_new_button)
 	buttons.add_child(Style.ui.button("Settings", func() -> void: settings_requested.emit()))
+	buttons.add_child(Style.ui.button("Credits", func() -> void: CreditsPage.open(self, Style.ui)))
 	var quit: Button = Style.ui.button("Quit", func() -> void: quit_requested.emit())
 	quit.disabled = not Display.can_quit()
 	buttons.add_child(quit)
