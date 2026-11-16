@@ -2,7 +2,8 @@ extends Control
 ## The title: the shed at dusk, the game's promise in one line, and the way
 ## in. Explains coaching in a few lines so the first session is not a mystery.
 const Style = preload("res://scripts/ui/style.gd")
-const TitleBackdrop = preload("res://scripts/ui/title_backdrop.gd")
+const TitleBackdrop = preload("res://addons/hatchery/ui/title_backdrop.gd")
+const TITLE_ART: Texture2D = preload("res://assets/art/ui/title_screen.png")
 const Display = preload("res://addons/hatchery/settings/display.gd")
 const GameSettings = preload("res://scripts/ui/game_settings.gd")
 
@@ -19,7 +20,7 @@ var _confirm: VBoxContainer
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	TitleBackdrop.mount(self)
+	TitleBackdrop.mount(self, TITLE_ART)
 	var frame := MarginContainer.new()
 	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	frame.anchor_right = 0.46
