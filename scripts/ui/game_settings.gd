@@ -6,19 +6,20 @@ extends "res://addons/hatchery/settings/settings_bundle.gd"
 const KeyBindings = preload("res://addons/hatchery/input/key_bindings.gd")
 const PadBindings = preload("res://addons/hatchery/input/pad_bindings.gd")
 const Style = preload("res://scripts/ui/style.gd")
+const SignalsClient = preload("res://addons/hatchery/telemetry/signals_client.gd")
 
 ## The interface size slider runs from 85 % to 125 %; 0.375 is 100 %.
 const SCALE_MIN: float = 0.85
 const SCALE_MAX: float = 1.25
-const DEFAULTS: Dictionary = {"music": 0.6, "fullscreen": false, "ui_scale": 0.375}
+const DEFAULTS: Dictionary = {"music": 0.6, "fullscreen": false, "ui_scale": 0.375, SignalsClient.SETTING_KEY: true}
 const SECTIONS: Array = [
 	{"title": "Sound", "sliders": ["music"]},
-	{"title": "Display", "sliders": ["ui_scale"], "toggles": ["fullscreen"]},
+	{"title": "Display", "sliders": ["ui_scale"], "toggles": ["fullscreen", SignalsClient.SETTING_KEY]},
 ]
 const ACTIONS: Dictionary = {"coach": "Coach (stop the marker)"}
 const WORDS: Dictionary = {
 	"setting_music": "Music", "setting_fullscreen": "Full screen", "setting_ui_scale": "Interface size",
-	"settings_pad": "Gamepad button",
+	"settings_pad": "Gamepad button", "setting_" + SignalsClient.SETTING_KEY: SignalsClient.SETTING_LABEL,
 }
 
 

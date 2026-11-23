@@ -28,12 +28,17 @@ const WrapupScreen = preload("res://scripts/ui/wrapup_screen.gd")
 const WeekScreen = preload("res://scripts/ui/week_screen.gd")
 const RaceScreen = preload("res://scripts/ui/race_screen.gd")
 const FinaleScreen = preload("res://scripts/ui/finale_screen.gd")
+const SignalsClient = preload("res://addons/hatchery/telemetry/signals_client.gd")
+const SignalsConfig = preload("res://addons/hatchery/telemetry/signals_config.gd")
+const RunReport = preload("res://scripts/ui/run_report.gd")
 const THEME: AudioStreamOggVorbis = preload("res://assets/audio/shed_theme.ogg")
 
 var catalog := Catalog.new()
 var game: GameState
 var save: SaveGame
 var settings: GameSettings
+## Anonymous play stats for Hatchery Signals, for the whole launch.
+var analytics: SignalsClient
 ## Opens the settings page over the current screen, and gives focus back on close.
 var settings_host: SettingsHost = SettingsHost.new(self) as SettingsHost
 ## The settings page while it is open.
@@ -56,6 +61,7 @@ func _ready() -> void:
 	theme = Style.make_theme()
 	settings = GameSettings.new(get_tree())
 	settings.load_and_apply()
+	_start_analytics()
 	_start_music()
 	if not catalog.load_all():
 		var error: Label = Style.ui.wrapped("Personal Best could not load its data:\n" + "\n".join(catalog.errors), 16, Style.RED)
@@ -124,6 +130,21 @@ func fade_through(between: Callable, hold: float = 0.4) -> void:
 # --- Title -----------------------------------------------------------------
 
 
+## Reporting runs for the whole launch; active time counts away from the title with no settings page open.
+func _start_analytics() -> void:
+	analytics = SignalsClient.new()
+	add_child(analytics)
+	analytics.is_playing = func() -> bool:
+		var current: Variant = screens.current
+		return is_instance_valid(current) and not (current is TitleScreen) and not settings_host.is_open()
+	# Capture tours (a SceneTree with shot()) never report.
+	var allowed: bool = SignalsConfig.allowed() and not get_tree().has_method("shot")
+	analytics.start("res://data/analytics.json", allowed, bool(settings.store.values.get(SignalsClient.SETTING_KEY, true)), false)
+	settings.changed.connect(func(key: String) -> void:
+		if key == SignalsClient.SETTING_KEY or key.is_empty():
+			analytics.set_enabled(bool(settings.store.values.get(SignalsClient.SETTING_KEY, true))))
+
+
 func show_title() -> void:
 	var title := TitleScreen.new()
 	var saved: Dictionary = save.load_data()
@@ -136,10 +157,22 @@ func show_title() -> void:
 
 
 func _new_season() -> void:
+	_report_abandoned()
 	# The only place a seed is chosen; the rules never read the clock.
 	game.new_game(hash([Balance.integer("campaign.seed"), Time.get_ticks_usec(), Time.get_unix_time_from_system()]))
 	_save_now()
+	analytics.run_started(RunReport.started(game))
 	show_intake()
+
+
+## A saved season still under way is abandoned when a new one replaces it.
+func _report_abandoned() -> void:
+	var saved: Dictionary = save.load_data()
+	if saved.is_empty() or saved.get("phase") == "done":
+		return
+	var old := GameState.new(catalog)
+	old.restore(saved)
+	analytics.run_ended(RunReport.ended(old, [], "abandoned", analytics.run_seconds()))
 
 
 func _continue() -> void:
@@ -148,6 +181,7 @@ func _continue() -> void:
 		_new_season()
 		return
 	game.restore(saved)
+	analytics.run_started({})
 	if game.phase == "intake":
 		show_intake()
 	else:
@@ -208,6 +242,7 @@ func show_planner() -> void:
 	planner.open_shop.connect(show_shop)
 	planner.book.connect(func(state: RefCounted, day: String) -> void:
 		WeekRules.book(game, state, day)
+		analytics.milestone_once("first_session_planned")
 		show_planner())
 	planner.start_week.connect(_start_week)
 	planner.quit_to_title.connect(show_title)
@@ -228,6 +263,8 @@ func _buy(id: String) -> void:
 	if not _save_now():
 		# A purchase that cannot be saved is not made.
 		ShopRules.refund(game, id)
+	else:
+		analytics.milestone_once("first_shop_purchase")
 	show_shop()
 
 
@@ -264,6 +301,7 @@ func _session_finished(sim: SessionSim) -> void:
 
 func _end_week() -> void:
 	var summary: Dictionary = WeekRules.end_week(game)
+	analytics.milestone_once("week_%d_completed" % int(summary.week))
 	var screen := WeekScreen.new()
 	screen.setup(game, summary)
 	screen.continued.connect(func() -> void: _after_week(summary))
@@ -274,6 +312,9 @@ func _end_week() -> void:
 func _after_week(summary: Dictionary) -> void:
 	if not summary.marathon.is_empty():
 		_save_now()
+		analytics.milestone_once("marathon_reached")
+		analytics.run_ended(RunReport.ended(game, summary.marathon, "completed", analytics.run_seconds()))
+		analytics.game_completed()
 		_show_race(summary.marathon, 0)
 		return
 	_arrived = WeekRules.begin_week(game)
