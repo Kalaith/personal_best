@@ -23,7 +23,7 @@ static func started(game: GameState) -> Dictionary:
 static func ended(game: GameState, results: Array, outcome: String, seconds: int) -> Dictionary:
 	var report: Dictionary = started(game)
 	report["outcome"] = outcome
-	report["wave"] = game.week
+	report["week"] = game.week
 	report["seconds"] = maxi(seconds, 0)
 	report["owned"] = game.owned.size()
 	var sessions: int = 0
@@ -34,14 +34,21 @@ static func ended(game: GameState, results: Array, outcome: String, seconds: int
 			injured += 1
 	report["sessions"] = sessions
 	report["injured"] = injured
-	var met: int = 0
+	# Per client, keyed by client id: the portal tallies each map per client.
+	var goal_met: Dictionary = {}
+	var finished: Dictionary = {}
+	var finish_minutes: Dictionary = {}
+	var niggle: Dictionary = {}
 	for result in results:
 		var id: String = str(result.client)
-		var achieved: bool = bool(result.achieved)
-		met += 1 if achieved else 0
-		report[id + "_goal_met"] = achieved
-		report[id + "_finished"] = bool(result.finished)
-		report[id + "_seconds"] = roundi(float(result.minutes) * 60.0) if bool(result.finished) else 0
-		report[id + "_niggle"] = bool(result.niggle)
-	report["goals_met"] = met
+		goal_met[id] = bool(result.achieved)
+		finished[id] = bool(result.finished)
+		niggle[id] = bool(result.niggle)
+		if bool(result.finished):
+			finish_minutes[id] = roundi(float(result.minutes))
+	report["goal_met"] = goal_met
+	report["finished"] = finished
+	report["finish_minutes"] = finish_minutes
+	report["niggle"] = niggle
+	report["goals_met"] = goal_met.values().count(true)
 	return report

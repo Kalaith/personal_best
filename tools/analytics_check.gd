@@ -69,7 +69,7 @@ func _initialize() -> void:
 		for id: Variant in ended["clients"]:
 			_check(game.client(str(id)) != null, "%s: '%s' is not a client" % [plan, id])
 		reports.append(ended)
-	print("analytics_check: seasons %s, goals met %s" % [str(reports.map(func(r: Dictionary) -> String: return "%s wk%d" % [r.outcome, r.wave])), str(reports[0].goals_met)])
+	print("analytics_check: seasons %s, goals met %s" % [str(reports.map(func(r: Dictionary) -> String: return "%s wk%d" % [r.outcome, r.week])), str(reports[0].goals_met)])
 	var endpoint: String = LaunchArgs.value("endpoint")
 	if endpoint.is_empty():
 		_finish()
