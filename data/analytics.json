@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "endpoint": "https://webhatchery.au/game_analytics/api/v1/events",
+  "game": "personal_best",
+  "write_key": "hs-dffbd10b387bdd79424f51fa1293c13af428bece57ce1e2b"
+}
